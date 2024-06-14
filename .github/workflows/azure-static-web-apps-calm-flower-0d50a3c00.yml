@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4  # 使用支持 Node.js 20 的最新版本
         with:
           submodules: true
           lfs: false
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3  # 使用支持 Node.js 20 的最新版本
         with:
-          node-version: '18.x'  # 使用正确的 Node.js 版本
+          node-version: '20'  # 使用 Node.js 20
       - name: Install dependencies
         run: |
           npm install
