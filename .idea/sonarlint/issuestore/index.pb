@@ -43,3 +43,7 @@ _
 /.github/workflows/main_facerecognitionreact.yml,e\5\e5ead6e7ddb0972f4bf384da7839d8c17123e588
 q
 A.github/workflows/azure-static-web-apps-calm-flower-0d50a3c00.yml,6\3\63d80b308479e24ed5387a631d8936109615c5ef
+7
+LICENSE,0\3\0398ccd0f49298b10a3d76a47800d2ebecd49859
+W
+'face-recognition-frontend/tsconfig.json,3\1\3198569c571a3e4587cd9cb946bd7c6dfbdd3c97
