@@ -15,33 +15,32 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
-      - uses: actions/checkout@v4  # 使用支持 Node.js 20 的最新版本
+      - uses: actions/checkout@v4
         with:
           submodules: true
           lfs: false
       - name: Set up Node.js
-        uses: actions/setup-node@v4  # 使用最新的支持 Node.js 20 的版本
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'  # 使用 Node.js 20
+          node-version: '20'
       - name: Install dependencies
         run: |
+          cd face-recognition-frontend
           npm install
       - name: Build project
         run: |
+          cd face-recognition-frontend
           npm run build
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_FLOWER_0D50A3C00 }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }} # 用于GitHub集成（如PR评论）
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          ###### 仓库/构建配置 - 这些值可以根据您的应用需求进行配置 ######
-          # 有关Static Web App工作流配置的更多信息，请访问: https://aka.ms/swaworkflowconfig
           app_location: "./face-recognition-frontend" # 应用源代码路径
           api_location: "" # API源代码路径 - 可选
           output_location: "build" # 构建后的应用内容目录 - 可选
-          ###### 仓库/构建配置结束 ######
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
