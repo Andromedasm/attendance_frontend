@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="384ae8a4-0b8b-46b5-a14a-92433d95b063" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/public/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/vite.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +70,7 @@
     "nodejs_interpreter_path": "node",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "application.passwordSafe",
-    "ts.external.directory.path": "C:\\Users\\DS201906079\\AppData\\Local\\Programs\\IntelliJ IDEA Ultimate\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "ts.external.directory.path": "C:\\Users\\DS201906079\\Downloads\\Github\\Personal\\attendance_frontend\\face-recognition-frontend\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -82,6 +82,12 @@
         <entry key="com.intellij.reactbuddy.storybook" value="false" />
       </map>
     </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\DS201906079\Downloads\Github\Personal\attendance_frontend\face-recognition-frontend" />
+      <recent name="C:\Users\DS201906079\Downloads\Github\Personal\attendance_frontend\face-recognition-frontend\public" />
+    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="AZURE_FUNCTION_SUPPORT" factoryName="Run Functions">
@@ -135,7 +141,7 @@
       <workItem from="1718341460005" duration="523000" />
       <workItem from="1718342077350" duration="1094000" />
       <workItem from="1718343208021" duration="207000" />
-      <workItem from="1718343439085" duration="4630000" />
+      <workItem from="1718343439085" duration="5252000" />
     </task>
     <servers />
   </component>

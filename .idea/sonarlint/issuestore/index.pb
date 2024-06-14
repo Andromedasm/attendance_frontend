@@ -49,3 +49,5 @@ W
 'face-recognition-frontend/tsconfig.json,3\1\3198569c571a3e4587cd9cb946bd7c6dfbdd3c97
 Y
 )face-recognition-frontend/public/vite.svg,2\2\222574c051890e265af60a9d665c6c59c571b15c
+[
++face-recognition-frontend/public/index.html,1\4\1460385e92bdfa0e06b60a74981e769e74aeb6f5
