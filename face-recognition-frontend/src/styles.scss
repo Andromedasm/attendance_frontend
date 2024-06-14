@@ -1,0 +1,32 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #2e3b4e;
+  transition: width 0.3s;
+  z-index: 1000;
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    color: white;
+
+    .menu-icon {
+      width: 35px;
+      min-width: 35px;
+      text-align: center;
+      margin-right: 10px;
+    }
+  }
+
+  .menu-header {
+    font-weight: bold;
+    font-size: 0.8em;
+    color: #aaa;
+    padding: 10px 20px;
+    text-align: left; /* 左对齐 */
+  }
+}
