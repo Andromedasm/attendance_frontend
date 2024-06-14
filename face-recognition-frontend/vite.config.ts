@@ -11,6 +11,7 @@ export default defineConfig({
     ],
   },
   build: {
+    outDir: 'dist',
     rollupOptions: {
       external: [
         '@fortawesome/fontawesome-free/css/all.min.css'

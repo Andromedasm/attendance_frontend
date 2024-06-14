@@ -5,32 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="384ae8a4-0b8b-46b5-a14a-92433d95b063" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/.eslintrc.cjs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/package.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/postcss.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/public/vite.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/App.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/App.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Capture.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Liveness.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/ReRegister.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Sidebar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Verify.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/assets/react.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/index.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/main.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/styles.scss" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/vite-env.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/tailwind.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/tsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/tsconfig.node.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/vite.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -157,6 +133,7 @@
       <updated>1718340010376</updated>
       <workItem from="1718340013361" duration="1376000" />
       <workItem from="1718341460005" duration="523000" />
+      <workItem from="1718342077350" duration="905000" />
     </task>
     <servers />
   </component>

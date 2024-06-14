@@ -1,5 +1,4 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import Sidebar from './Sidebar'; // 引用 Sidebar 组件
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './index.css'; // 确保 Tailwind CSS 被正确引入
