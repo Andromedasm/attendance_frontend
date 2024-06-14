@@ -1,15 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import { resolve } from 'path';
 
 export default defineConfig({
     plugins: [react()],
-    base: '/', // Ensure the base is set, especially if your app isn't served from the root
     build: {
         outDir: 'build',
         rollupOptions: {
             input: {
-                main: path.resolve(__dirname, 'index.html')
+                main: resolve(__dirname, 'index.html')
             }
         }
     },

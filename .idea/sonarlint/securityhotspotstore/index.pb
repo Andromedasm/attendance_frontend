@@ -41,3 +41,5 @@ n
 >.github/workflows/azure-static-web-apps-icy-rock-0bce92c00.yml,2\a\2a0b6e330703d57da91b16ac0539d6474e887d8f
 _
 /.github/workflows/main_facerecognitionreact.yml,e\5\e5ead6e7ddb0972f4bf384da7839d8c17123e588
+q
+A.github/workflows/azure-static-web-apps-calm-flower-0d50a3c00.yml,6\3\63d80b308479e24ed5387a631d8936109615c5ef

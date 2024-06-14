@@ -19,19 +19,29 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'  # 使用正确的 Node.js 版本
+      - name: Install dependencies
+        run: |
+          npm install
+      - name: Build project
+        run: |
+          npm run build
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_FLOWER_0D50A3C00 }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # 用于GitHub集成（如PR评论）
           action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "./face-recognition-frontend" # App source code path
-          api_location: "" # Api source code path - optional
-          output_location: "build" # Built app content directory - optional
-          ###### End of Repository/Build Configurations ######
+          ###### 仓库/构建配置 - 这些值可以根据您的应用需求进行配置 ######
+          # 有关Static Web App工作流配置的更多信息，请访问: https://aka.ms/swaworkflowconfig
+          app_location: "./face-recognition-frontend" # 应用源代码路径
+          api_location: "" # API源代码路径 - 可选
+          output_location: "build" # 构建后的应用内容目录 - 可选
+          ###### 仓库/构建配置结束 ######
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
