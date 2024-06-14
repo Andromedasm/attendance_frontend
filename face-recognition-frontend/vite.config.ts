@@ -8,7 +8,7 @@ export default defineConfig({
         outDir: 'build',
         rollupOptions: {
             input: {
-                main: resolve(__dirname, 'index.html')
+                main: resolve(__dirname, 'public/index.html')
             }
         }
     },
@@ -20,5 +20,13 @@ export default defineConfig({
                 secure: false,
             },
         },
+    },
+    publicDir: 'public',
+    optimizeDeps: {
+        exclude: [
+            'axios',
+            '@fortawesome/react-fontawesome',
+            '@fortawesome/fontawesome-free/css/all.min.css'
+        ],
     },
 });

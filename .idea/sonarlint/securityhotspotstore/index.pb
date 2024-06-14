@@ -47,3 +47,5 @@ A.github/workflows/azure-static-web-apps-calm-flower-0d50a3c00.yml,6\3\63d80b30
 LICENSE,0\3\0398ccd0f49298b10a3d76a47800d2ebecd49859
 W
 'face-recognition-frontend/tsconfig.json,3\1\3198569c571a3e4587cd9cb946bd7c6dfbdd3c97
+Y
+)face-recognition-frontend/public/vite.svg,2\2\222574c051890e265af60a9d665c6c59c571b15c
