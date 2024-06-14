@@ -1,11 +1,18 @@
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
 import path from 'path';
-
 
 export default defineConfig({
     plugins: [react()],
+    base: '/', // Ensure the base is set, especially if your app isn't served from the root
+    build: {
+        outDir: 'build',
+        rollupOptions: {
+            input: {
+                main: path.resolve(__dirname, 'index.html')
+            }
+        }
+    },
     server: {
         proxy: {
             '/api': {
@@ -14,8 +21,5 @@ export default defineConfig({
                 secure: false,
             },
         },
-    },
-    build: {
-        outDir: 'build',
     },
 });
