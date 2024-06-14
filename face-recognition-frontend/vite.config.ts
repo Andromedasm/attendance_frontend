@@ -1,14 +1,18 @@
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
-import path from 'path';
-
+import { resolve } from 'path';
 
 export default defineConfig({
     plugins: [react()],
+    build: {
+        outDir: 'build', // 确保输出目录为 build
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'), // 指定 index.html 文件的位置
+            },
+        },
+    },
     server: {
-        host: '0.0.0.0', // 使得可以通过网络访问
-        port: 5173,
         proxy: {
             '/api': {
                 target: 'https://insightface.japaneast.cloudapp.azure.com:5000',
@@ -16,8 +20,5 @@ export default defineConfig({
                 secure: false,
             },
         },
-    },
-    build: {
-        outDir: 'build',
     },
 });
