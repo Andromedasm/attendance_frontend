@@ -35,3 +35,7 @@ $face-recognition-frontend/index.html,e\7\e70a6ebd1b00a8ee71125db8f14d5bd9ae4fc
 ,face-recognition-frontend/tsconfig.node.json,f\c\fc0c93fac340ff8c2195143c0962a603fb9a8b15
 [
 +face-recognition-frontend/postcss.config.js,5\e\5ea2bcb94267f1f059976cd3cbc2be21649915d5
+b
+2face-recognition-frontend/staticwebapp.config.json,a\c\ac3c9be9cb83a255efbdd60ec7cca9c9fdde7cdd
+n
+>.github/workflows/azure-static-web-apps-icy-rock-0bce92c00.yml,2\a\2a0b6e330703d57da91b16ac0539d6474e887d8f
