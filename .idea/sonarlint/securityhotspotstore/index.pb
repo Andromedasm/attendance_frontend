@@ -35,12 +35,6 @@ $face-recognition-frontend/index.html,e\7\e70a6ebd1b00a8ee71125db8f14d5bd9ae4fc
 ,face-recognition-frontend/tsconfig.node.json,f\c\fc0c93fac340ff8c2195143c0962a603fb9a8b15
 [
 +face-recognition-frontend/postcss.config.js,5\e\5ea2bcb94267f1f059976cd3cbc2be21649915d5
-b
-2face-recognition-frontend/staticwebapp.config.json,a\c\ac3c9be9cb83a255efbdd60ec7cca9c9fdde7cdd
-n
->.github/workflows/azure-static-web-apps-icy-rock-0bce92c00.yml,2\a\2a0b6e330703d57da91b16ac0539d6474e887d8f
-_
-/.github/workflows/main_facerecognitionreact.yml,e\5\e5ead6e7ddb0972f4bf384da7839d8c17123e588
 q
 A.github/workflows/azure-static-web-apps-calm-flower-0d50a3c00.yml,6\3\63d80b308479e24ed5387a631d8936109615c5ef
 7
@@ -49,5 +43,3 @@ W
 'face-recognition-frontend/tsconfig.json,3\1\3198569c571a3e4587cd9cb946bd7c6dfbdd3c97
 Y
 )face-recognition-frontend/public/vite.svg,2\2\222574c051890e265af60a9d665c6c59c571b15c
-[
-+face-recognition-frontend/public/index.html,1\4\1460385e92bdfa0e06b60a74981e769e74aeb6f5

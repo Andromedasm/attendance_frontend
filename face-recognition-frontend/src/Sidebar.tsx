@@ -1,8 +1,16 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
+import {useLocation, Link} from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './styles.scss';
 
 const Sidebar: React.FC = () => {
+    const location = useLocation();
+    const [activeItem, setActiveItem] = useState('');
+
+    useEffect(() => {
+        setActiveItem(location.pathname);
+    }, [location]);
+
     return (
         <div className="sidebar">
             <div className="px-5 py-6">
@@ -10,36 +18,41 @@ const Sidebar: React.FC = () => {
                 <ul className="space-y-1">
                     <li className="menu-header"><span>REGISTER</span></li>
                     <li>
-                        <a href="/capture" className="flex items-center p-3 text-gray-700 menu-item rounded">
+                        <Link to="/capture"
+                              className={`flex items-center p-3 menu-item rounded ${activeItem === '/capture' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>
                             <i className="fas fa-camera fa-lg mr-3"></i>
                             顔登録
-                        </a>
+                        </Link>
                     </li>
                     <li>
-                        <a href="/re_register" className="flex items-center p-3 text-gray-700 menu-item rounded">
+                        <Link to="/re_register"
+                              className={`flex items-center p-3 menu-item rounded ${activeItem === '/re_register' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>
                             <i className="fas fa-sync-alt fa-lg mr-3"></i>
                             顔データ再登録
-                        </a>
+                        </Link>
                     </li>
                     <li className="menu-header"><span>VERIFY</span></li>
                     <li>
-                        <a href="/verify" className="flex items-center p-3 text-gray-700 menu-item rounded">
+                        <Link to="/verify"
+                              className={`flex items-center p-3 menu-item rounded ${activeItem === '/verify' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>
                             <i className="fas fa-user-check fa-lg mr-3"></i>
                             顔認証
-                        </a>
+                        </Link>
                     </li>
                     <li>
-                        <a href="/liveness" className="flex items-center p-3 text-gray-700 menu-item rounded">
+                        <Link to="/liveness"
+                              className={`flex items-center p-3 menu-item rounded ${activeItem === '/liveness' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>
                             <i className="fas fa-eye fa-lg mr-3"></i>
                             ライブネスチェック
-                        </a>
+                        </Link>
                     </li>
                     <li className="menu-header"><span>ATTENDANCE</span></li>
                     <li>
-                        <a href="/attendance" className="flex items-center p-3 text-gray-700 menu-item rounded">
+                        <Link to="/attendance"
+                              className={`flex items-center p-3 menu-item rounded ${activeItem === '/attendance' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>
                             <i className="fas fa-users fa-lg mr-3"></i>
                             出退勤
-                        </a>
+                        </Link>
                     </li>
                 </ul>
             </div>
