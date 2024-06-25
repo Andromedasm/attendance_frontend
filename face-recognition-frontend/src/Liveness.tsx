@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar'; // 引用 Sidebar 组件
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './styles.scss';
 
@@ -7,6 +8,13 @@ const Liveness: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isVideoStarted, setIsVideoStarted] = useState(false);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
+    const showAlert = (msg: string) => {
+        setAlertMessage(msg);
+        setAlertOpen(true);
+    };
 
     const startVideo = () => {
         if (!isVideoStarted) {
@@ -21,7 +29,7 @@ const Liveness: React.FC = () => {
                 })
                 .catch(error => {
                     console.error("Error accessing the webcam", error);
-                    alert('Error accessing the webcam: ' + error.message);
+                    showAlert('Error accessing the webcam: ' + error.message);
                 });
         } else {
             performLivenessCheck();
@@ -60,10 +68,10 @@ const Liveness: React.FC = () => {
         })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                showAlert(data.message);
             })
             .catch(error => {
-                alert('Error sending frames: ' + error.message);
+                showAlert('Error sending frames: ' + error.message);
                 console.error('Error:', error);
             });
     };
@@ -71,13 +79,23 @@ const Liveness: React.FC = () => {
     return (
         <div className="flex h-screen font-sans antialiased bg-gray-200">
             <Sidebar /> {/* 使用 Sidebar 组件 */}
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex-1 flex flex-col items-center justify-center ml-64">
+                <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
+                    <DialogTitle>確認結果</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>{alertMessage}</DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setAlertOpen(false)} style={{ backgroundColor: 'blue', color: 'white' }}>OK</Button>
+                    </DialogActions>
+                </Dialog>
+
                 <video ref={videoRef} width="640" height="480" className="rounded shadow-lg mb-4"></video>
                 <button
                     onClick={startVideo}
                     className="px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
                 >
-                    {isVideoStarted ? 'Check Liveness' : 'Start Video'}
+                    {isVideoStarted ? 'Check' : 'Start Video'}
                 </button>
                 <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
             </div>

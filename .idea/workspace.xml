@@ -5,7 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="384ae8a4-0b8b-46b5-a14a-92433d95b063" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/clock.scss" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/palette.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/useInitial.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Capture.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Capture.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Liveness.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Liveness.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/ReRegister.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/ReRegister.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Verify.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Verify.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/main.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/styles.scss" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/styles.scss" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,8 +34,13 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="SCSS File" />
         <option value="TypeScript JSX File" />
+        <option value="SCSS File" />
+        <option value="com.intellij.reactbuddy.palette" />
+        <option value="com.intellij.reactbuddy.previews" />
+        <option value="com.intellij.reactbuddy.index" />
+        <option value="com.intellij.reactbuddy.useInitial" />
+        <option value="com.intellij.reactbuddy.README" />
       </list>
     </option>
   </component>
@@ -56,7 +77,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;0.0.2&quot;,
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
@@ -71,6 +92,9 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;application.passwordSafe&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\DS201906079\\Downloads\\Github\\Personal\\attendance_frontend\\face-recognition-frontend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;stardust.markdown.MarkdownSplitEditorSuppressor:keyList&quot;: []
   }
 }</component>
   <component name="ReactDesignerToolWindowState">
@@ -123,8 +147,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.17890.1" />
-        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.17890.1" />
+        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.18034.62" />
+        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.18034.62" />
       </set>
     </attachedChunks>
   </component>
@@ -144,6 +168,8 @@
       <workItem from="1718349595350" duration="113000" />
       <workItem from="1718683721325" duration="998000" />
       <workItem from="1718698946398" duration="43000" />
+      <workItem from="1719283926808" duration="323000" />
+      <workItem from="1719284273126" duration="3326000" />
     </task>
     <servers />
   </component>

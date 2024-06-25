@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import Sidebar from './Sidebar'; // 引用 Sidebar 组件
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import './styles.scss';
 
 const ReRegister: React.FC = () => {
@@ -8,37 +9,45 @@ const ReRegister: React.FC = () => {
     const [employeeName, setEmployeeName] = useState('');
     const [message, setMessage] = useState('');
     const [status, setStatus] = useState('');
-    // 移除未使用的 videoStarted 状态
-    // const [videoStarted, setVideoStarted] = useState(false);
+    const [videoStarted, setVideoStarted] = useState(false);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
 
-    const showMessage = (msg: string, timeout = 5000) => {
-        setMessage(msg);
-        setTimeout(() => {
-            setMessage('');
-        }, timeout);
+    const showAlert = (msg: string) => {
+        setAlertMessage(msg);
+        setAlertOpen(true);
+    };
+
+    const showConfirm = (msg: string, callback: () => void) => {
+        setConfirmMessage(msg);
+        setConfirmCallback(() => callback);
+        setConfirmOpen(true);
     };
 
     const startVideo = () => {
         navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 } // 调整视频尺寸
+            video: {width: 640, height: 480} // 调整视频尺寸
         })
             .then(stream => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-                    // setVideoStarted(true); // 移除未使用的状态更新
+                    setVideoStarted(true);
                     document.getElementById('startVideo')!.style.display = 'none';
                     document.getElementById('reRegister')!.style.display = 'inline-block';
                 }
             })
             .catch(error => {
                 console.error('Error accessing the media devices.', error);
-                showMessage('Error starting video: ' + error.message);
+                showAlert('Error starting video: ' + error.message);
             });
     };
 
     const reRegister = () => {
         if (!employeeNumber.trim() || !employeeName.trim()) {
-            alert('社員番号と名前を記入してください.');
+            showAlert('社員番号と名前を記入してください.');
             return;
         }
 
@@ -64,7 +73,7 @@ const ReRegister: React.FC = () => {
                     .then(response => response.json())
                     .then(data => {
                         if (data.override_needed) {
-                            if (confirm('社員番号既に存在します。上書きしますか？')) {
+                            showConfirm('社員番号既に存在します。上書きしますか？', () => {
                                 let formDataOverride = new FormData();
                                 formDataOverride.append('image', blob as Blob, employeeNumber + '.png');
                                 formDataOverride.append('employeeNumber', employeeNumber);
@@ -77,26 +86,29 @@ const ReRegister: React.FC = () => {
                                 })
                                     .then(response => response.json())
                                     .then(data => {
-                                        alert(data.message);
+                                        showAlert(data.message);
                                         setStatus('');
                                     })
                                     .catch(error => {
                                         console.error('Error:', error);
-                                        alert('An error occurred: ' + error.message);
+                                        showAlert('An error occurred: ' + error.message);
                                         setStatus('');
                                     });
-                            } else {
-                                alert('操作已取消');
-                                setStatus('');
-                            }
+                            });
                         } else {
-                            alert(data.message);
+                            showAlert(data.message);
                             setStatus('');
                         }
                     })
                     .catch(error => {
-                        console.error('Error uploading:', error);
-                        alert('Error: ' + error.message);
+                        if (error.json) {
+                            error.json().then((body: any) => {
+                                showAlert(body.error);
+                            });
+                        } else {
+                            console.error('Error uploading:', error);
+                            showAlert('Error: ' + error.message);
+                        }
                         setStatus('');
                     });
             });
@@ -105,10 +117,30 @@ const ReRegister: React.FC = () => {
 
     return (
         <div className="flex h-screen font-sans antialiased bg-gray-200">
-            <Sidebar /> {/* 使用 Sidebar 组件 */}
+            <Sidebar/> {/* 使用 Sidebar 组件 */}
             <div className="flex-1 p-10 ml-64">
-                <h2 className="text-3xl font-bold mb-6">顔データ再登録</h2>
-                <div className="flex flex-col items-center justify-center min-h-full">
+                <div className="flex flex-col items-center justify-center min-h-full relative">
+                    <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
+                        <DialogTitle>メッセージ</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>{alertMessage}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setAlertOpen(false)} style={{ backgroundColor: 'blue', color: 'white' }}>OK</Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                        <DialogTitle>Confirm</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>{confirmMessage}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setConfirmOpen(false)} style={{ backgroundColor: 'red', color: 'white' }}>NO</Button>
+                            <Button onClick={() => { confirmCallback(); setConfirmOpen(false); }} style={{ backgroundColor: 'blue', color: 'white' }}>YES</Button>
+                        </DialogActions>
+                    </Dialog>
+
                     <video ref={videoRef} width="640" height="480" autoPlay playsInline
                            className="rounded-lg shadow-lg mb-4"></video>
                     <button
@@ -122,9 +154,9 @@ const ReRegister: React.FC = () => {
                         id="reRegister"
                         onClick={reRegister}
                         className="mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
-                        style={{ display: 'none' }}
+                        style={{display: 'none'}}
                     >
-                        Re-Register
+                        Capture
                     </button>
                     <div className="mt-4 flex space-x-4">
                         <input

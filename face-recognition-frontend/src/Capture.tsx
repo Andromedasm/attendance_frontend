@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar'; // 引用 Sidebar 组件
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import './styles.scss';
 
 const Capture: React.FC = () => {
@@ -9,17 +10,26 @@ const Capture: React.FC = () => {
     const [message, setMessage] = useState('');
     const [status, setStatus] = useState('');
     const [videoStarted, setVideoStarted] = useState(false);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
 
-    const showMessage = (msg: string, timeout = 5000) => {
-        setMessage(msg);
-        setTimeout(() => {
-            setMessage('');
-        }, timeout);
+    const showAlert = (msg: string) => {
+        setAlertMessage(msg);
+        setAlertOpen(true);
+    };
+
+    const showConfirm = (msg: string, callback: () => void) => {
+        setConfirmMessage(msg);
+        setConfirmCallback(() => callback);
+        setConfirmOpen(true);
     };
 
     const startVideo = () => {
         navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 } // 调整视频尺寸
+            video: { width: 640, height: 480 }
         })
             .then(stream => {
                 if (videoRef.current) {
@@ -29,13 +39,13 @@ const Capture: React.FC = () => {
             })
             .catch(error => {
                 console.error('Error accessing the media devices.', error);
-                showMessage('Error starting video: ' + error.message);
+                showAlert('Error starting video: ' + error.message);
             });
     };
 
     const capture = () => {
         if (!employeeNumber.trim() || !employeeName.trim()) {
-            alert('社員番号と名前を記入してください.');
+            showAlert('社員番号と名前を記入してください.');
             return;
         }
 
@@ -69,28 +79,28 @@ const Capture: React.FC = () => {
                             let matchesInfo = data.matches.map((match: any) =>
                                 `社員番号: ${match.employee_number}, 名前: ${match.employee_name}, 類似度: ${match.similarity.toFixed(2)}`
                             ).join("\n");
-                            let confirmUpload = confirm(`類似な顔が存在します:\n${matchesInfo}\nアップロードしますか?`);
-                            if (confirmUpload) {
+                            showConfirm(`類似な顔が存在します:\n${matchesInfo}\nアップロードしますか?`, () => {
                                 formData.append('override', 'true');
-                                return fetch('https://insightface.japaneast.cloudapp.azure.com/api/upload', {
+                                fetch('https://insightface.japaneast.cloudapp.azure.com/api/upload', {
                                     method: 'POST',
                                     body: formData,
-                                });
-                            } else {
-                                throw new Error('アップロードをキャンセルしました.');
-                            }
+                                })
+                                    .then(response => response.json())
+                                    .then(data => showAlert(data.message))
+                                    .catch(error => showAlert('アップロードに失敗しました: ' + error.message));
+                            });
                         } else {
-                            alert(data.message);
+                            showAlert(data.message);
                         }
                     })
                     .catch(error => {
                         if (error.json) {
                             error.json().then((body: any) => {
-                                alert(body.error);
+                                showAlert(body.error);
                             });
                         } else {
                             console.error('Error uploading the image.', error);
-                            alert(error.message);
+                            showAlert(error.message);
                         }
                         setStatus('');
                     });
@@ -102,8 +112,28 @@ const Capture: React.FC = () => {
         <div className="flex h-screen font-sans antialiased bg-gray-200">
             <Sidebar /> {/* 使用 Sidebar 组件 */}
             <div className="flex-1 p-10 ml-64">
-                <h2 className="text-3xl font-bold mb-6">顔登録</h2>
-                <div className="flex flex-col items-center justify-center min-h-full">
+                <div className="flex flex-col items-center justify-center min-h-full relative">
+                    <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
+                        <DialogTitle>メッセージ</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>{alertMessage}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setAlertOpen(false)} style={{ backgroundColor: 'blue', color: 'white' }}>OK</Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                        <DialogTitle>Confirm</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>{confirmMessage}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setConfirmOpen(false)} style={{ backgroundColor: 'red', color: 'white' }}>NO</Button>
+                            <Button onClick={() => { confirmCallback(); setConfirmOpen(false); }} style={{ backgroundColor: 'blue', color: 'white' }}>YES</Button>
+                        </DialogActions>
+                    </Dialog>
+
                     <video ref={videoRef} width="640" height="480" autoPlay playsInline className="rounded-lg shadow-lg mb-4"></video> {/* 固定视频尺寸 */}
                     {!videoStarted && (
                         <button

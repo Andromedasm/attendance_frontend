@@ -43,3 +43,17 @@ W
 'face-recognition-frontend/tsconfig.json,3\1\3198569c571a3e4587cd9cb946bd7c6dfbdd3c97
 Y
 )face-recognition-frontend/public/vite.svg,2\2\222574c051890e265af60a9d665c6c59c571b15c
+X
+(face-recognition-frontend/src/clock.scss,f\f\ff6285bd0c79f837ac89518af9e12d5929add35b
+]
+-face-recognition-frontend/src/dev/palette.tsx,6\5\65c69b4f8e219855d961e7d1a155708a8d9e2159
+^
+.face-recognition-frontend/src/dev/previews.tsx,9\0\90c9fdd72c8121a9b4a8992f2270c06cffc37bc9
+Z
+*face-recognition-frontend/src/dev/index.ts,7\b\7ba601a2eb0316153de5b736fe4ff4d536a786d8
+_
+/face-recognition-frontend/src/dev/useInitial.ts,5\e\5eecbb52cb343e22406df094ea409a56a878cd77
+[
++face-recognition-frontend/src/dev/README.md,7\f\7f7df134ff08da83553599911f07e1cbfba3cd17
+V
+&face-recognition-frontend/package.json,f\8\f8411fa09e1c06a39e909dad0306f0fc059221e4
