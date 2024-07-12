@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import Sidebar from './Sidebar'; // 引用 Sidebar 组件
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import {Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button} from '@mui/material';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './styles.scss';
 
@@ -25,7 +25,7 @@ const Attendance: React.FC = () => {
 
     const startVideo = () => {
         navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 }
+            video: {width: 640, height: 480}
         })
             .then(stream => {
                 if (videoRef.current) {
@@ -85,7 +85,7 @@ const Attendance: React.FC = () => {
 
     return (
         <div className="flex h-screen font-sans antialiased bg-gray-200">
-            <Sidebar /> {/* 使用 Sidebar 组件 */}
+            <Sidebar/> {/* 使用 Sidebar 组件 */}
             <div className="flex-1 flex flex-col items-center justify-center p-10 ml-64">
                 <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
                     <DialogTitle>メッセージ</DialogTitle>
@@ -93,12 +93,14 @@ const Attendance: React.FC = () => {
                         <DialogContentText>{alertMessage}</DialogContentText>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setAlertOpen(false)} style={{ backgroundColor: 'blue', color: 'white' }}>OK</Button>
+                        <Button onClick={() => setAlertOpen(false)}
+                                style={{backgroundColor: 'blue', color: 'white'}}>OK</Button>
                     </DialogActions>
                 </Dialog>
 
                 <div className="flex flex-col items-center justify-center h-full">
-                    <video ref={videoRef} width="640" height="480" className="rounded-lg shadow-lg mb-4" autoPlay playsInline></video>
+                    <video ref={videoRef} width="640" height="480" className="rounded-lg shadow-lg mb-4" autoPlay
+                           playsInline></video>
                     <div className="flex mb-4 space-x-4">
                         <button
                             className={`text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-2xl px-24 py-10 text-center transition-transform transform ${selectedStatus === 1 ? 'selected scale-110' : ''}`}

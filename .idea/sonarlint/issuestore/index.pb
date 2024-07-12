@@ -57,3 +57,5 @@ _
 +face-recognition-frontend/src/dev/README.md,7\f\7f7df134ff08da83553599911f07e1cbfba3cd17
 V
 &face-recognition-frontend/package.json,f\8\f8411fa09e1c06a39e909dad0306f0fc059221e4
+[
++face-recognition-frontend/src/vite-env.d.ts,7\7\775fc5cadb000b5de2d006dd7eecf6a8fbe90ce4

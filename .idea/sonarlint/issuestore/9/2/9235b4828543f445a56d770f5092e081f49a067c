@@ -1,3 +1,7 @@
 
-itypescript:S2004E"ARefactor this code to not nest functions more than 4 levels deep.(ÓùŠÅúÿÿÿÿ8¶âÕ¨2
-ntypescript:S4084k"LMedia elements such as <audio> and <video> must have a <track> for captions.(»ıĞ8¸âÕ¨2
+`typescript:S1854
+"8Remove this useless assignment to variable "setMessage".( «Êñûÿÿÿÿ8¬é©ò„2
+itypescript:S2004O"ARefactor this code to not nest functions more than 4 levels deep.(ÓùŠÅúÿÿÿÿ8¶âÕ¨2
+dtypescript:S2004R"ARefactor this code to not nest functions more than 4 levels deep.(Ğ”îÎ8­é©ò„2
+dtypescript:S2004b"ARefactor this code to not nest functions more than 4 levels deep.(­ñÜ½8­é©ò„2
+otypescript:S4084‰"LMedia elements such as <audio> and <video> must have a <track> for captions.(»ıĞ8¸âÕ¨2

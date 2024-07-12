@@ -5,23 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="384ae8a4-0b8b-46b5-a14a-92433d95b063" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/clock.scss" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/index.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/palette.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/useInitial.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Capture.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Capture.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Liveness.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Liveness.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/ReRegister.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/ReRegister.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Verify.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Verify.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/main.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/styles.scss" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/styles.scss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,6 +44,10 @@
     &quot;accountId&quot;: &quot;eab80c6e-565d-4bc2-b23b-dcfbcbf41d72&quot;
   }
 }</component>
+  <component name="JsBowerSettings">
+    <bower-package value="" />
+    <bower.json value="" />
+  </component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="C:\PHP\php.exe" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
@@ -84,12 +73,15 @@
     &quot;last_opened_file_path&quot;: &quot;C:/Users/DS201906079/OneDrive - 株式会社城山/Documents/Source Code/Thunder/Admin Panel&quot;,
     &quot;list.type.of.created.stylesheet&quot;: &quot;SCSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;application.passwordSafe&quot;,
+    &quot;npm.React Buddy Preview.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.intellij.reactbuddy.storybookConfig&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\DS201906079\\Downloads\\Github\\Personal\\attendance_frontend\\face-recognition-frontend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
@@ -169,7 +161,14 @@
       <workItem from="1718683721325" duration="998000" />
       <workItem from="1718698946398" duration="43000" />
       <workItem from="1719283926808" duration="323000" />
-      <workItem from="1719284273126" duration="3326000" />
+      <workItem from="1719284273126" duration="3822000" />
+      <workItem from="1719292469673" duration="11041000" />
+      <workItem from="1719304895094" duration="115000" />
+      <workItem from="1719374743484" duration="29000" />
+      <workItem from="1719374799727" duration="155000" />
+      <workItem from="1719378454669" duration="4246000" />
+      <workItem from="1719472778743" duration="1120000" />
+      <workItem from="1719475373996" duration="100000" />
     </task>
     <servers />
   </component>
@@ -181,5 +180,14 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand>
+      <path>
+        <item name="attendance_frontend" type="b2602c69:ProjectViewProjectNode" />
+        <item name="dir{file://C:/Users/DS201906079/Downloads/Github/Personal/attendance_frontend}" type="462c0819:PsiDirectoryNode" />
+      </path>
+    </expand>
+    <select />
   </component>
 </project>
