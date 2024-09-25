@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="384ae8a4-0b8b-46b5-a14a-92433d95b063" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/Attendance.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/src/dev/previews.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/face-recognition-frontend/package-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +47,7 @@
     <bower-package value="" />
     <bower.json value="" />
   </component>
-  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="C:\PHP\php.exe" />
+  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="PHP" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -70,7 +69,7 @@
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/DS201906079/OneDrive - 株式会社城山/Documents/Source Code/Thunder/Admin Panel&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/DS201906079/Downloads/Github/Personal/Obsidian&quot;,
     &quot;list.type.of.created.stylesheet&quot;: &quot;SCSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
@@ -81,7 +80,7 @@
     &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;npm.React Buddy Preview.executor&quot;: &quot;Run&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.intellij.reactbuddy.storybookConfig&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\DS201906079\\Downloads\\Github\\Personal\\attendance_frontend\\face-recognition-frontend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
@@ -139,8 +138,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.18034.62" />
-        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.18034.62" />
+        <option value="bundled-jdk-9823dce3aa75-b114ca120d71-intellij.indexing.shared.core-IU-242.20224.300" />
+        <option value="bundled-js-predefined-d6986cc7102b-410509235cf1-JavaScript-IU-242.20224.300" />
       </set>
     </attachedChunks>
   </component>
@@ -169,6 +168,23 @@
       <workItem from="1719378454669" duration="4246000" />
       <workItem from="1719472778743" duration="1120000" />
       <workItem from="1719475373996" duration="100000" />
+      <workItem from="1721193938776" duration="4332000" />
+      <workItem from="1721201298827" duration="703000" />
+      <workItem from="1721364605861" duration="948000" />
+      <workItem from="1721371950032" duration="82000" />
+      <workItem from="1721374737807" duration="1137000" />
+      <workItem from="1721711175495" duration="2707000" />
+      <workItem from="1721717088678" duration="594000" />
+      <workItem from="1721800907855" duration="1963000" />
+      <workItem from="1721803009548" duration="3545000" />
+      <workItem from="1721808440979" duration="1564000" />
+      <workItem from="1721875041314" duration="2898000" />
+      <workItem from="1721886624146" duration="1761000" />
+      <workItem from="1721953542926" duration="210000" />
+      <workItem from="1722299852182" duration="860000" />
+      <workItem from="1722847058735" duration="535000" />
+      <workItem from="1723006780060" duration="19000" />
+      <workItem from="1723091897237" duration="17000" />
     </task>
     <servers />
   </component>
