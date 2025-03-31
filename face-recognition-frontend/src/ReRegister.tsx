@@ -1,151 +1,455 @@
 import React, { useRef, useState } from 'react';
-import Sidebar from './Sidebar'; // 引用 Sidebar 组件
+import Sidebar from './Sidebar';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import './styles.scss';
+
+// 引入 react-toastify
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ReRegister: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+
+    // 输入的员工编号/姓名
     const [employeeNumber, setEmployeeNumber] = useState('');
     const [employeeName, setEmployeeName] = useState('');
-    const [message, setMessage] = useState('');
-    const [status, setStatus] = useState('');
-    // 移除未使用的 videoStarted 状态
-    // const [videoStarted, setVideoStarted] = useState(false);
 
-    const showMessage = (msg: string, timeout = 5000) => {
-        setMessage(msg);
-        setTimeout(() => {
-            setMessage('');
-        }, timeout);
+    // 状态显示
+    const [status, setStatus] = useState('');
+    const [videoStarted, setVideoStarted] = useState<boolean>(false);
+
+    // 是否正在进行"再登録"
+    const [isReRegistering, setIsReRegistering] = useState(false);
+    const [reRegisterBtnText, setReRegisterBtnText] = useState('再登録開始');
+    const [reRegisterBtnClass, setReRegisterBtnClass] = useState(
+        'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none ...'
+    );
+
+    // 对话框 (相似度/override)
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogContent, setDialogContent] = useState('');
+    const [dialogMode, setDialogMode] = useState<'confirm' | 'lowSimilarity' | ''>('');
+    const [logId, setLogId] = useState<number | null>(null);
+
+    // =========== 新增：管理员密码对话框 + 15分钟免重复验证 ============
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+    const [adminPassword, setAdminPassword] = useState('');
+    const [lastAuthTime, setLastAuthTime] = useState<number | null>(null);
+
+    // ------------------- toast 工具函数 -------------------
+    const showToastError = (message: string) => {
+        toast.error(message, { autoClose: 5000 });
+    };
+    const showToastInfo = (message: string) => {
+        toast.info(message, { autoClose: 5000 });
     };
 
+    // 关闭相似度/override对话框
+    const closeDialog = () => {
+        setDialogOpen(false);
+        setDialogContent('');
+        setDialogMode('');
+    };
+
+    // 关闭密码对话框
+    const closePasswordDialog = () => {
+        setPasswordDialogOpen(false);
+        setAdminPassword('');
+    };
+
+    // ------------------- 自动获取员工姓名 -------------------
+    const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const number = e.target.value;
+        setEmployeeNumber(number);
+
+        if (number.trim() !== '') {
+            fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.employeeName) {
+                        setEmployeeName(data.employeeName);
+                        setStatus(`取得した社員名: ${data.employeeName}`);
+                    } else {
+                        setEmployeeName('');
+                        setStatus('該当社員が見つかりません');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error fetching employee name:', error);
+                    setStatus('社員名を取得できませんでした');
+                });
+        } else {
+            setEmployeeName('');
+            setStatus('');
+        }
+    };
+
+    // ------------------- 启动摄像头 -------------------
     const startVideo = () => {
-        navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 } // 调整视频尺寸
-        })
-            .then(stream => {
+        navigator.mediaDevices
+            .getUserMedia({ video: { width: 640, height: 480 } })
+            .then((stream) => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-                    // setVideoStarted(true); // 移除未使用的状态更新
-                    document.getElementById('startVideo')!.style.display = 'none';
-                    document.getElementById('reRegister')!.style.display = 'inline-block';
+                    setVideoStarted(true);
                 }
             })
-            .catch(error => {
-                console.error('Error accessing the media devices.', error);
-                showMessage('Error starting video: ' + error.message);
+            .catch((error) => {
+                console.error('Error accessing media devices.', error);
+                showToastError('ビデオを開始できません: ' + error.message);
             });
     };
 
-    const reRegister = () => {
-        if (!employeeNumber.trim() || !employeeName.trim()) {
-            alert('社員番号と名前を記入してください.');
+    // ================ 入口：先检查密码 => 再 reRegister ================
+    const checkPasswordAndReRegister = () => {
+        // 若 15分钟内验证过 => 直接 reRegister
+        if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
+            reRegister();
+        } else {
+            // 否则 => 弹密码对话框
+            setPasswordDialogOpen(true);
+        }
+    };
+
+    // 密码对话框 => 提交
+    const handlePasswordSubmit = () => {
+        if (!adminPassword.trim()) {
+            showToastError('パスワードを入力してください');
             return;
         }
+        let formData = new FormData();
+        formData.append('password', adminPassword);
 
+        fetch('/api/check_admin_password', {
+            method: 'POST',
+            body: formData
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body?.detail || '認証失敗');
+                }
+                return res.json();
+            })
+            .then(() => {
+                // 成功 => 记录时间 => 关闭对话框 => 调用 reRegister
+                setLastAuthTime(Date.now());
+                closePasswordDialog();
+                showToastInfo('パスワード認証成功');
+                reRegister();
+            })
+            .catch((err) => {
+                showToastError('パスワードが違います: ' + err.message);
+            });
+    };
+
+    // ------------------- reRegister主逻辑 -------------------
+    const reRegister = () => {
+        if (!employeeNumber.trim() || !employeeName.trim()) {
+            showToastError('社員番号と名前を記入してください');
+            return;
+        }
+        setIsReRegistering(true);
+        setReRegisterBtnText('再登録中...');
+        setReRegisterBtnClass('mt-4 px-6 py-3 bg-gray-400 text-white ...');
+        setStatus('アップロード中...');
+
+        // 1) 拍照
         const canvas = document.createElement('canvas');
         const video = videoRef.current;
-        if (video) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            canvas.toBlob(blob => {
-                let formData = new FormData();
-                formData.append('image', blob as Blob, employeeNumber + '.png');
-                formData.append('employeeNumber', employeeNumber);
-                formData.append('employeeName', employeeName);
-
-                setStatus('Uploading...');
-
-                fetch('https://insightface.japaneast.cloudapp.azure.com/api/re_register', {
-                    method: 'POST',
-                    body: formData,
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.override_needed) {
-                            if (confirm('社員番号既に存在します。上書きしますか？')) {
-                                let formDataOverride = new FormData();
-                                formDataOverride.append('image', blob as Blob, employeeNumber + '.png');
-                                formDataOverride.append('employeeNumber', employeeNumber);
-                                formDataOverride.append('employeeName', employeeName);
-                                formDataOverride.append('override', 'true');
-
-                                fetch('https://insightface.japaneast.cloudapp.azure.com/api/re_register', {
-                                    method: 'POST',
-                                    body: formDataOverride,
-                                })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        alert(data.message);
-                                        setStatus('');
-                                    })
-                                    .catch(error => {
-                                        console.error('Error:', error);
-                                        alert('An error occurred: ' + error.message);
-                                        setStatus('');
-                                    });
-                            } else {
-                                alert('操作已取消');
-                                setStatus('');
-                            }
-                        } else {
-                            alert(data.message);
-                            setStatus('');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error uploading:', error);
-                        alert('Error: ' + error.message);
-                        setStatus('');
-                    });
-            });
+        if (!video) {
+            showToastError('ビデオが準備できていません');
+            resetReRegisterButton();
+            return;
         }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                showToastError('画像を取得できませんでした');
+                resetReRegisterButton();
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('image', blob, employeeNumber + '.png');
+            formData.append('employeeNumber', employeeNumber);
+            formData.append('employeeName', employeeName);
+            // 不带 override => 服务器 override=false
+
+            fetch('/api/re_register', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    console.log('re_register result:', data);
+                    setStatus('');
+
+                    // 根据服务器返回:
+                    if (data.similarity_check === true && !data.override) {
+                        // 相似度>=0.5 => confirm
+                        setLogId(data.log_id || null);
+                        setDialogContent(`相似度 ${data.similarity_score}, 覆盖旧人脸?`);
+                        setDialogMode('confirm');
+                        setDialogOpen(true);
+                    } else if (data.similarity_check === false) {
+                        // 低相似度 => 三按钮
+                        setLogId(data.log_id || null);
+                        setDialogContent(`相似度 ${data.similarity_score} < 0.5, どうしますか？`);
+                        setDialogMode('lowSimilarity');
+                        setDialogOpen(true);
+                    } else if (data.override_needed) {
+                        // 老逻辑 => 覆盖提示
+                        setDialogContent('社員番号既に存在します。上書きしますか？');
+                        setDialogMode('confirm');
+                        setDialogOpen(true);
+                        setLogId(null);
+                    } else {
+                        // else => 正常完成
+                        showToastInfo(data.message || '再登録が完了しました');
+                    }
+                })
+                .catch((error) => {
+                    setStatus('');
+                    console.error('Error re_register:', error);
+                    showToastError('エラー: ' + error.message);
+                })
+                .finally(() => {
+                    resetReRegisterButton();
+                });
+        });
+    };
+
+    // 重置按钮
+    const resetReRegisterButton = () => {
+        setIsReRegistering(false);
+        setStatus('');
+        setReRegisterBtnText('再登録開始');
+        setReRegisterBtnClass(
+            'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 ...'
+        );
+    };
+
+    // 对话框按钮处理 - 相似度>=0.5 => yes => override
+    const handleYes = () => {
+        setDialogOpen(false);
+        if (!videoRef.current) {
+            showToastError('ビデオが準備できていません');
+            return;
+        }
+        let formData = new FormData();
+
+        // 再拍照
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                showToastError('画像を取得できませんでした');
+                return;
+            }
+            formData.append('image', blob, employeeNumber + '.png');
+            formData.append('employeeNumber', employeeNumber);
+            formData.append('employeeName', employeeName);
+            formData.append('override', 'true');
+
+            fetch('/api/re_register', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((resp) => resp.json())
+                .then((data2) => {
+                    console.log('override result:', data2);
+                    showToastInfo(data2.message || '再登録が完了しました(上書き)');
+                })
+                .catch((err) => {
+                    console.error(err);
+                    showToastError('上書き失敗: ' + err.message);
+                });
+        });
+    };
+    const handleNo = () => {
+        setDialogOpen(false);
+        showToastInfo('再登録をキャンセルしました');
+    };
+
+    // 相似度<0.5 => 重试 / 发送请求 / 取消
+    const handleRetry = () => {
+        setDialogOpen(false);
+        reRegister();
+    };
+    const handleSendRequest = () => {
+        setDialogOpen(false);
+        if (!logId) {
+            showToastError('LogIdがありません。');
+            return;
+        }
+        let formData = new FormData();
+        formData.append('log_id', String(logId));
+        formData.append('reason', '相似度が低いので管理者に確認お願いします。');
+
+        fetch('/api/re_register_approval_request', {
+            method: 'POST',
+            body: formData
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                showToastInfo(data.message || '送信しました。管理者承認待ち');
+            })
+            .catch((err) => {
+                console.error(err);
+                showToastError('送信失敗:' + err.message);
+            });
+    };
+    const handleCancel = () => {
+        setDialogOpen(false);
+        showToastInfo('再登録をキャンセルしました');
     };
 
     return (
         <div className="flex h-screen font-sans antialiased bg-gray-200">
-            <Sidebar /> {/* 使用 Sidebar 组件 */}
-            <div className="flex-1 p-10 ml-64">
-                <h2 className="text-3xl font-bold mb-6">顔データ再登録</h2>
-                <div className="flex flex-col items-center justify-center min-h-full">
-                    <video ref={videoRef} width="640" height="480" autoPlay playsInline
-                           className="rounded-lg shadow-lg mb-4"></video>
+            <Sidebar />
+            <div className="flex-1 flex flex-col items-center justify-center p-10">
+                {/* 密码对话框 */}
+                <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
+                    <DialogTitle style={{ fontSize: '1.5rem' }}>管理者パスワード</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText style={{ fontSize: '1.25rem' }}>
+                            顔再登録を行うには管理者パスワードを入力してください
+                        </DialogContentText>
+                        <input
+                            type="password"
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            className="mt-4 px-4 py-2 border text-lg rounded-lg"
+                            placeholder="パスワード"
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={closePasswordDialog}
+                            style={{ backgroundColor: 'gray', color: 'white', fontSize: '1.25rem' }}
+                        >
+                            キャンセル
+                        </Button>
+                        <Button
+                            onClick={handlePasswordSubmit}
+                            style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
+                        >
+                            OK
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* 相似度/override 对话框 */}
+                <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+                    <DialogTitle style={{ fontSize: '1.5rem' }}>確認</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText
+                            style={{ fontSize: '1.25rem' }}
+                            dangerouslySetInnerHTML={{ __html: dialogContent }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        {dialogMode === 'confirm' && (
+                            <>
+                                <Button
+                                    onClick={handleNo}
+                                    style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}
+                                >
+                                    No
+                                </Button>
+                                <Button
+                                    onClick={handleYes}
+                                    style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
+                                >
+                                    Yes
+                                </Button>
+                            </>
+                        )}
+                        {dialogMode === 'lowSimilarity' && (
+                            <>
+                                <Button
+                                    onClick={handleRetry}
+                                    style={{ backgroundColor: 'green', color: 'white', fontSize: '1.25rem' }}
+                                >
+                                    再試行
+                                </Button>
+                                <Button
+                                    onClick={handleSendRequest}
+                                    style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
+                                >
+                                    送信
+                                </Button>
+                                <Button
+                                    onClick={handleCancel}
+                                    style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}
+                                >
+                                    キャンセル
+                                </Button>
+                            </>
+                        )}
+                    </DialogActions>
+                </Dialog>
+
+                {/* 摄像头 */}
+                <video
+                    ref={videoRef}
+                    width="640"
+                    height="480"
+                    autoPlay
+                    playsInline
+                    className="rounded-lg shadow-lg mb-4"
+                ></video>
+
+                {/* Start Video / 再登録按钮 */}
+                {!videoStarted ? (
                     <button
-                        id="startVideo"
                         onClick={startVideo}
-                        className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
+                        className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 ..."
                     >
                         Start Video
                     </button>
+                ) : (
                     <button
-                        id="reRegister"
-                        onClick={reRegister}
-                        className="mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
-                        style={{ display: 'none' }}
+                        // 点击时 => 先 checkPassword
+                        onClick={checkPasswordAndReRegister}
+                        disabled={isReRegistering}
+                        className={reRegisterBtnClass}
                     >
-                        Re-Register
+                        {reRegisterBtnText}
                     </button>
-                    <div className="mt-4 flex space-x-4">
-                        <input
-                            type="text"
-                            value={employeeNumber}
-                            onChange={(e) => setEmployeeNumber(e.target.value)}
-                            placeholder="Employee Number"
-                            className="px-4 py-2 border text-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                            type="text"
-                            value={employeeName}
-                            onChange={(e) => setEmployeeName(e.target.value)}
-                            placeholder="Employee Name"
-                            className="px-4 py-2 border text-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div className="mt-4 text-lg font-semibold text-green-500">{message}</div>
-                    <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
+                )}
+
+                {/* 编号 & 姓名 */}
+                <div className="mt-4 flex space-x-4">
+                    <input
+                        type="text"
+                        value={employeeNumber}
+                        onChange={handleEmployeeNumberChange}
+                        placeholder="社員番号"
+                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none ..."
+                    />
+                    <input
+                        type="text"
+                        value={employeeName}
+                        onChange={(e) => setEmployeeName(e.target.value)}
+                        placeholder="社員名"
+                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none ..."
+                    />
                 </div>
+
+                {/* 状态信息 */}
+                <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
             </div>
+            <ToastContainer />
         </div>
     );
 };
