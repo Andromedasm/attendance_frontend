@@ -10,54 +10,49 @@ import 'react-toastify/dist/ReactToastify.css';
 const ReRegister: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    // 输入的员工编号/姓名
+    // ========== 员工编号 + 姓名 ==========
     const [employeeNumber, setEmployeeNumber] = useState('');
     const [employeeName, setEmployeeName] = useState('');
 
-    // 状态显示
+    // ========== 状态 & 按钮 ==========
     const [status, setStatus] = useState('');
     const [videoStarted, setVideoStarted] = useState<boolean>(false);
-
-    // 是否正在进行"再登録"
     const [isReRegistering, setIsReRegistering] = useState(false);
     const [reRegisterBtnText, setReRegisterBtnText] = useState('再登録開始');
     const [reRegisterBtnClass, setReRegisterBtnClass] = useState(
         'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none ...'
     );
 
-    // 对话框 (相似度/override)
+    // ========== 对话框(相似度/override) ==========
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState('');
     const [dialogMode, setDialogMode] = useState<'confirm' | 'lowSimilarity' | ''>('');
     const [logId, setLogId] = useState<number | null>(null);
 
-    // =========== 新增：管理员密码对话框 + 15分钟免重复验证 ============
+    // ========== 管理员密码对话框 & 15分钟免重复 ==========
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
     const [adminPassword, setAdminPassword] = useState('');
     const [lastAuthTime, setLastAuthTime] = useState<number | null>(null);
 
-    // ------------------- toast 工具函数 -------------------
-    const showToastError = (message: string) => {
-        toast.error(message, { autoClose: 5000 });
+    // ========== Verify(认証)按钮相关 ==========
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verifyText, setVerifyText] = useState('認証');
+
+    // ---------- toast 工具函数 ----------
+    const showToastError = (msg: string) => {
+        toast.error(msg, { autoClose: 5000 });
     };
-    const showToastInfo = (message: string) => {
-        toast.info(message, { autoClose: 5000 });
+    const showToastInfo = (msg: string) => {
+        toast.info(msg, { autoClose: 5000 });
+    };
+    const showToastInfoHTML = (htmlStr: string) => {
+        toast.info(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
+    };
+    const showToastSuccessHTML = (htmlStr: string) => {
+        toast.success(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
     };
 
-    // 关闭相似度/override对话框
-    const closeDialog = () => {
-        setDialogOpen(false);
-        setDialogContent('');
-        setDialogMode('');
-    };
-
-    // 关闭密码对话框
-    const closePasswordDialog = () => {
-        setPasswordDialogOpen(false);
-        setAdminPassword('');
-    };
-
-    // ------------------- 自动获取员工姓名 -------------------
+    // ========== 1) 自动获取员工姓名 ==========
     const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const number = e.target.value;
         setEmployeeNumber(number);
@@ -84,7 +79,7 @@ const ReRegister: React.FC = () => {
         }
     };
 
-    // ------------------- 启动摄像头 -------------------
+    // ========== 2) 启动摄像头 ==========
     const startVideo = () => {
         navigator.mediaDevices
             .getUserMedia({ video: { width: 640, height: 480 } })
@@ -100,18 +95,22 @@ const ReRegister: React.FC = () => {
             });
     };
 
-    // ================ 入口：先检查密码 => 再 reRegister ================
+    // ========== 3) Check Password => ReRegister ==========
     const checkPasswordAndReRegister = () => {
-        // 若 15分钟内验证过 => 直接 reRegister
+        // 若15分钟内验证过
         if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
             reRegister();
         } else {
-            // 否则 => 弹密码对话框
+            // 否则 => 显示密码对话框
             setPasswordDialogOpen(true);
         }
     };
 
-    // 密码对话框 => 提交
+    const closePasswordDialog = () => {
+        setPasswordDialogOpen(false);
+        setAdminPassword('');
+    };
+
     const handlePasswordSubmit = () => {
         if (!adminPassword.trim()) {
             showToastError('パスワードを入力してください');
@@ -122,7 +121,7 @@ const ReRegister: React.FC = () => {
 
         fetch('/api/check_admin_password', {
             method: 'POST',
-            body: formData
+            body: formData,
         })
             .then(async (res) => {
                 if (!res.ok) {
@@ -132,7 +131,7 @@ const ReRegister: React.FC = () => {
                 return res.json();
             })
             .then(() => {
-                // 成功 => 记录时间 => 关闭对话框 => 调用 reRegister
+                // 成功
                 setLastAuthTime(Date.now());
                 closePasswordDialog();
                 showToastInfo('パスワード認証成功');
@@ -143,7 +142,7 @@ const ReRegister: React.FC = () => {
             });
     };
 
-    // ------------------- reRegister主逻辑 -------------------
+    // ========== 4) 人脸重新注册(主要逻辑) ==========
     const reRegister = () => {
         if (!employeeNumber.trim() || !employeeName.trim()) {
             showToastError('社員番号と名前を記入してください');
@@ -154,7 +153,7 @@ const ReRegister: React.FC = () => {
         setReRegisterBtnClass('mt-4 px-6 py-3 bg-gray-400 text-white ...');
         setStatus('アップロード中...');
 
-        // 1) 拍照
+        // 拍照
         const canvas = document.createElement('canvas');
         const video = videoRef.current;
         if (!video) {
@@ -178,7 +177,6 @@ const ReRegister: React.FC = () => {
             formData.append('image', blob, employeeNumber + '.png');
             formData.append('employeeNumber', employeeNumber);
             formData.append('employeeName', employeeName);
-            // 不带 override => 服务器 override=false
 
             fetch('/api/re_register', {
                 method: 'POST',
@@ -189,27 +187,28 @@ const ReRegister: React.FC = () => {
                     console.log('re_register result:', data);
                     setStatus('');
 
-                    // 根据服务器返回:
+                    // a) 相似度 >= 0.5 => confirm
                     if (data.similarity_check === true && !data.override) {
-                        // 相似度>=0.5 => confirm
                         setLogId(data.log_id || null);
                         setDialogContent(`相似度 ${data.similarity_score}, 覆盖旧人脸?`);
                         setDialogMode('confirm');
                         setDialogOpen(true);
-                    } else if (data.similarity_check === false) {
-                        // 低相似度 => 三按钮
+                    }
+                    // b) 相似度 < 0.5 => 三按钮
+                    else if (data.similarity_check === false) {
                         setLogId(data.log_id || null);
                         setDialogContent(`相似度 ${data.similarity_score} < 0.5, どうしますか？`);
                         setDialogMode('lowSimilarity');
                         setDialogOpen(true);
-                    } else if (data.override_needed) {
-                        // 老逻辑 => 覆盖提示
+                    }
+                    // c) 旧逻辑 override_needed
+                    else if (data.override_needed) {
                         setDialogContent('社員番号既に存在します。上書きしますか？');
                         setDialogMode('confirm');
                         setDialogOpen(true);
                         setLogId(null);
                     } else {
-                        // else => 正常完成
+                        // d) 正常完成
                         showToastInfo(data.message || '再登録が完了しました');
                     }
                 })
@@ -224,7 +223,6 @@ const ReRegister: React.FC = () => {
         });
     };
 
-    // 重置按钮
     const resetReRegisterButton = () => {
         setIsReRegistering(false);
         setStatus('');
@@ -234,7 +232,7 @@ const ReRegister: React.FC = () => {
         );
     };
 
-    // 对话框按钮处理 - 相似度>=0.5 => yes => override
+    // ========== 5) 覆盖对话框(Yes/No) ==========
     const handleYes = () => {
         setDialogOpen(false);
         if (!videoRef.current) {
@@ -280,10 +278,10 @@ const ReRegister: React.FC = () => {
         showToastInfo('再登録をキャンセルしました');
     };
 
-    // 相似度<0.5 => 重试 / 发送请求 / 取消
+    // ========== 6) 相似度<0.5 => 重试 / 发送请求 / 取消 ==========
     const handleRetry = () => {
         setDialogOpen(false);
-        reRegister();
+        reRegister(); // 再来一遍
     };
     const handleSendRequest = () => {
         setDialogOpen(false);
@@ -297,7 +295,7 @@ const ReRegister: React.FC = () => {
 
         fetch('/api/re_register_approval_request', {
             method: 'POST',
-            body: formData
+            body: formData,
         })
             .then((r) => r.json())
             .then((data) => {
@@ -313,11 +311,74 @@ const ReRegister: React.FC = () => {
         showToastInfo('再登録をキャンセルしました');
     };
 
+    // ========== 7) 人脸验证(Verify)逻辑 ==========
+    const verifyFace = () => {
+        if (!videoRef.current) {
+            showToastError('ビデオが準備できていません');
+            return;
+        }
+        setIsVerifying(true);
+        setVerifyText('認証中...');
+
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                showToastError('画像を取得できませんでした');
+                setIsVerifying(false);
+                setVerifyText('認証');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('image', blob);
+
+            fetch('/api/verify', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.error) {
+                        showToastError('認証失敗しました: ' + data.error);
+                    } else if (data.found_faces && data.found_faces.length > 0) {
+                        // 多人
+                        const info = data.found_faces
+                            .map((f: any) => {
+                                const similarity = f.similarity ? f.similarity.toFixed(2) : 'N/A';
+                                return `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${similarity}`;
+                            })
+                            .join('<br/>');
+                        showToastSuccessHTML(`以下の顔が認証されました:<br/>${info}`);
+                    } else if (data.message) {
+                        showToastInfoHTML(data.message);
+                    } else {
+                        showToastInfo('認証結果を取得できませんでした');
+                    }
+                })
+                .catch((err) => {
+                    console.error(err);
+                    showToastError('認証失敗しました: ' + err.message);
+                })
+                .finally(() => {
+                    setIsVerifying(false);
+                    setVerifyText('認証');
+                });
+        });
+    };
+
     return (
         <div className="flex h-screen font-sans antialiased bg-gray-200">
             <Sidebar />
             <div className="flex-1 flex flex-col items-center justify-center p-10">
-                {/* 密码对话框 */}
+                {/* =========== 管理员密码对话框 =========== */}
                 <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
                     <DialogTitle style={{ fontSize: '1.5rem' }}>管理者パスワード</DialogTitle>
                     <DialogContent>
@@ -348,7 +409,7 @@ const ReRegister: React.FC = () => {
                     </DialogActions>
                 </Dialog>
 
-                {/* 相似度/override 对话框 */}
+                {/* =========== 相似度/override 对话框 =========== */}
                 <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
                     <DialogTitle style={{ fontSize: '1.5rem' }}>確認</DialogTitle>
                     <DialogContent>
@@ -399,7 +460,7 @@ const ReRegister: React.FC = () => {
                     </DialogActions>
                 </Dialog>
 
-                {/* 摄像头 */}
+                {/* ======== 摄像头 ======== */}
                 <video
                     ref={videoRef}
                     width="640"
@@ -409,7 +470,7 @@ const ReRegister: React.FC = () => {
                     className="rounded-lg shadow-lg mb-4"
                 ></video>
 
-                {/* Start Video / 再登録按钮 */}
+                {/* ======== 两个主要按钮: [再登録][認証] ======== */}
                 {!videoStarted ? (
                     <button
                         onClick={startVideo}
@@ -418,17 +479,31 @@ const ReRegister: React.FC = () => {
                         Start Video
                     </button>
                 ) : (
-                    <button
-                        // 点击时 => 先 checkPassword
-                        onClick={checkPasswordAndReRegister}
-                        disabled={isReRegistering}
-                        className={reRegisterBtnClass}
-                    >
-                        {reRegisterBtnText}
-                    </button>
+                    <div className="flex space-x-4 mt-4">
+                        {/* "再登録" => 先校验密码 => reRegister */}
+                        <button
+                            onClick={checkPasswordAndReRegister}
+                            disabled={isReRegistering}
+                            className={reRegisterBtnClass}
+                        >
+                            {reRegisterBtnText}
+                        </button>
+
+                        {/* "認証" => verifyFace */}
+                        <button
+                            onClick={verifyFace}
+                            disabled={isVerifying}
+                            className="mt-4 px-6 py-3 text-white font-semibold text-xl rounded-lg shadow-md
+                                       bg-gradient-to-r from-purple-500 via-pink-500 to-red-500
+                                       hover:from-purple-600 hover:via-pink-600 hover:to-red-600
+                                       transition-all duration-300"
+                        >
+                            {verifyText}
+                        </button>
+                    </div>
                 )}
 
-                {/* 编号 & 姓名 */}
+                {/* ========== 编号 & 姓名输入框 ========== */}
                 <div className="mt-4 flex space-x-4">
                     <input
                         type="text"
@@ -449,6 +524,7 @@ const ReRegister: React.FC = () => {
                 {/* 状态信息 */}
                 <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
             </div>
+
             <ToastContainer />
         </div>
     );
