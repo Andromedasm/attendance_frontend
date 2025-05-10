@@ -2,19 +2,15 @@ import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import './styles.scss';
-
-// 引入 react-toastify
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ReRegister: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    // ========== 员工编号 + 姓名 ==========
     const [employeeNumber, setEmployeeNumber] = useState('');
     const [employeeName, setEmployeeName] = useState('');
 
-    // ========== 状态 & 按钮 ==========
     const [status, setStatus] = useState('');
     const [videoStarted, setVideoStarted] = useState<boolean>(false);
     const [isReRegistering, setIsReRegistering] = useState(false);
@@ -23,40 +19,30 @@ const ReRegister: React.FC = () => {
         'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none ...'
     );
 
-    // ========== 对话框(相似度/override) ==========
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState('');
-    const [dialogMode, setDialogMode] = useState<'confirm' | 'lowSimilarity' | ''>('');
-    const [logId, setLogId] = useState<number | null>(null);
+    // Add new mode for low similarity confirmation
+    const [dialogMode, setDialogMode] = useState<'confirm' | 'lowSimilarityRequest' | 'lowSimilarityConfirm' | ''>('');
+    const [logId, setLogId] = useState<number | null>(null); // Kept for 'lowSimilarityRequest' if ever re-enabled
+    const [currentSimilarityScore, setCurrentSimilarityScore] = useState<number | null>(null);
 
-    // ========== 管理员密码对话框 & 15分钟免重复 ==========
+
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
     const [adminPassword, setAdminPassword] = useState('');
     const [lastAuthTime, setLastAuthTime] = useState<number | null>(null);
 
-    // ========== Verify(认証)按钮相关 ==========
     const [isVerifying, setIsVerifying] = useState(false);
     const [verifyText, setVerifyText] = useState('認証');
 
-    // ---------- toast 工具函数 ----------
-    const showToastError = (msg: string) => {
-        toast.error(msg, { autoClose: 5000 });
-    };
-    const showToastInfo = (msg: string) => {
-        toast.info(msg, { autoClose: 5000 });
-    };
-    const showToastInfoHTML = (htmlStr: string) => {
-        toast.info(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
-    };
-    const showToastSuccessHTML = (htmlStr: string) => {
-        toast.success(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
-    };
+    const showToastError = (msg: string) => { toast.error(msg, { autoClose: 5000 }); };
+    const showToastInfo = (msg: string) => { toast.info(msg, { autoClose: 5000 }); };
+    const showToastInfoHTML = (htmlStr: string) => { toast.info(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 }); };
+    const showToastSuccessHTML = (htmlStr: string) => { toast.success(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 }); };
 
-    // ========== 1) 自动获取员工姓名 ==========
     const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const number = e.target.value;
         setEmployeeNumber(number);
-
+        // ... (rest of the function is fine) ...
         if (number.trim() !== '') {
             fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
                 .then((res) => res.json())
@@ -79,8 +65,7 @@ const ReRegister: React.FC = () => {
         }
     };
 
-    // ========== 2) 启动摄像头 ==========
-    const startVideo = () => {
+    const startVideo = () => { /* ... (no changes needed) ... */ 
         navigator.mediaDevices
             .getUserMedia({ video: { width: 640, height: 480 } })
             .then((stream) => {
@@ -95,23 +80,18 @@ const ReRegister: React.FC = () => {
             });
     };
 
-    // ========== 3) Check Password => ReRegister ==========
-    const checkPasswordAndReRegister = () => {
-        // 若15分钟内验证过
+    const checkPasswordAndReRegister = () => { /* ... (no changes needed) ... */ 
         if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
-            reRegister();
+            reRegister(); // Initial call, no special flags
         } else {
-            // 否则 => 显示密码对话框
             setPasswordDialogOpen(true);
         }
     };
-
-    const closePasswordDialog = () => {
+    const closePasswordDialog = () => { /* ... (no changes needed) ... */ 
         setPasswordDialogOpen(false);
         setAdminPassword('');
     };
-
-    const handlePasswordSubmit = () => {
+    const handlePasswordSubmit = () => { /* ... (no changes needed) ... */ 
         if (!adminPassword.trim()) {
             showToastError('パスワードを入力してください');
             return;
@@ -131,19 +111,28 @@ const ReRegister: React.FC = () => {
                 return res.json();
             })
             .then(() => {
-                // 成功
                 setLastAuthTime(Date.now());
                 closePasswordDialog();
                 showToastInfo('パスワード認証成功');
-                reRegister();
+                reRegister(); // Initial call, no special flags
             })
             .catch((err) => {
                 showToastError('パスワードが違います: ' + err.message);
             });
     };
+    
+    const resetReRegisterButton = () => {
+        setIsReRegistering(false);
+        // setStatus(''); // Keep status message from backend if any
+        setReRegisterBtnText('再登録開始');
+        setReRegisterBtnClass(
+            'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 ...'
+        );
+    };
 
-    // ========== 4) 人脸重新注册(主要逻辑) ==========
-    const reRegister = () => {
+    // ========== 4) 人脸重新注册(主要逻辑) - Modified for new flow ==========
+    // This function is for the *initial* re-registration attempt
+    const reRegister = (forceOverrideLowSimilarity = false, isLegacyOverride = false) => {
         if (!employeeNumber.trim() || !employeeName.trim()) {
             showToastError('社員番号と名前を記入してください');
             return;
@@ -153,7 +142,6 @@ const ReRegister: React.FC = () => {
         setReRegisterBtnClass('mt-4 px-6 py-3 bg-gray-400 text-white ...');
         setStatus('アップロード中...');
 
-        // 拍照
         const canvas = document.createElement('canvas');
         const video = videoRef.current;
         if (!video) {
@@ -178,141 +166,92 @@ const ReRegister: React.FC = () => {
             formData.append('employeeNumber', employeeNumber);
             formData.append('employeeName', employeeName);
 
-            fetch('/api/re_register', {
-                method: 'POST',
-                body: formData,
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    console.log('re_register result:', data);
-                    setStatus('');
-
-                    // a) 相似度 >= 0.5 => confirm
-                    if (data.similarity_check === true && !data.override) {
-                        setLogId(data.log_id || null);
-                        setDialogContent(`相似度 ${data.similarity_score}, 覆盖旧人脸?`);
-                        setDialogMode('confirm');
-                        setDialogOpen(true);
-                    }
-                    // b) 相似度 < 0.5 => 三按钮
-                    else if (data.similarity_check === false) {
-                        setLogId(data.log_id || null);
-                        setDialogContent(`相似度 ${data.similarity_score} < 0.5, どうしますか？`);
-                        setDialogMode('lowSimilarity');
-                        setDialogOpen(true);
-                    }
-                    // c) 旧逻辑 override_needed
-                    else if (data.override_needed) {
-                        setDialogContent('社員番号既に存在します。上書きしますか？');
-                        setDialogMode('confirm');
-                        setDialogOpen(true);
-                        setLogId(null);
-                    } else {
-                        // d) 正常完成
-                        showToastInfo(data.message || '再登録が完了しました');
-                    }
-                })
-                .catch((error) => {
-                    setStatus('');
-                    console.error('Error re_register:', error);
-                    showToastError('エラー: ' + error.message);
-                })
-                .finally(() => {
-                    resetReRegisterButton();
-                });
-        });
-    };
-
-    const resetReRegisterButton = () => {
-        setIsReRegistering(false);
-        setStatus('');
-        setReRegisterBtnText('再登録開始');
-        setReRegisterBtnClass(
-            'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 ...'
-        );
-    };
-
-    // ========== 5) 覆盖对话框(Yes/No) ==========
-    const handleYes = () => {
-        setDialogOpen(false);
-        if (!videoRef.current) {
-            showToastError('ビデオが準備できていません');
-            return;
-        }
-        let formData = new FormData();
-
-        // 再拍照
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                return;
+            if (forceOverrideLowSimilarity) {
+                formData.append('force_override_low_similarity', 'true');
             }
-            formData.append('image', blob, employeeNumber + '.png');
-            formData.append('employeeNumber', employeeNumber);
-            formData.append('employeeName', employeeName);
-            formData.append('override', 'true');
+            if (isLegacyOverride) { // For the old 'confirm' dialog path
+                formData.append('override', 'true');
+            }
+
 
             fetch('/api/re_register', {
                 method: 'POST',
                 body: formData,
             })
-                .then((resp) => resp.json())
-                .then((data2) => {
-                    console.log('override result:', data2);
-                    showToastInfo(data2.message || '再登録が完了しました(上書き)');
-                })
-                .catch((err) => {
-                    console.error(err);
-                    showToastError('上書き失敗: ' + err.message);
-                });
+            .then(async (res) => { // Added async to handle potential error response body
+                if (!res.ok) {
+                    // Try to parse error from backend if not 2xx
+                    const errorData = await res.json().catch(() => ({ detail: "サーバーエラー" }));
+                    throw new Error(errorData.detail || errorData.error || `HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then((data) => {
+                console.log('re_register result:', data);
+                setStatus(data.message || ''); // Display message from backend
+
+                if (data.error) {
+                     showToastError(data.error);
+                } else if (data.similarity_check === true) { // High similarity, backend handled it
+                    showToastSuccessHTML(data.message || '再登録が完了しました (類似度良好)');
+                } else if (data.similarity_check === false && data.similarity_score !== undefined) { // Low similarity, ask user
+                    setCurrentSimilarityScore(data.similarity_score);
+                    setDialogContent(data.message || `類似度 ${data.similarity_score.toFixed(2)} < 0.5。続行しますか？`);
+                    setDialogMode('lowSimilarityConfirm'); 
+                    setDialogOpen(true);
+                } else if (data.override_needed) { // Fallback for old logic / specific backend response
+                    setDialogContent(data.message || '社員番号既に存在します。上書きしますか？');
+                    setDialogMode('confirm'); // Original confirm dialog
+                    setDialogOpen(true);
+                } else { // Generic success or info
+                    showToastInfo(data.message || '再登録処理が完了しました。');
+                }
+            })
+            .catch((error) => {
+                setStatus('');
+                console.error('Error re_register:', error);
+                showToastError('再登録エラー: ' + error.message);
+            })
+            .finally(() => {
+                resetReRegisterButton();
+            });
         });
+    };
+
+
+    // ========== 5) 覆盖对话框(Yes/No) - For legacy 'confirm' dialog ==========
+    // This handles the 'confirm' dialog which might be triggered by 'override_needed'
+    const handleYesLegacy = () => {
+        setDialogOpen(false);
+        // Re-take photo and call reRegister with isLegacyOverride = true
+        reRegister(false, true); // Sets 'override: true' in backend call
     };
     const handleNo = () => {
         setDialogOpen(false);
         showToastInfo('再登録をキャンセルしました');
     };
 
-    // ========== 6) 相似度<0.5 => 重试 / 发送请求 / 取消 ==========
-    const handleRetry = () => {
+    // ========== 6) 相似度<0.5 => [确定继续] / [取消] ==========
+    // This handles the NEW 'lowSimilarityConfirm' dialog
+    const handleForceProceedLowSimilarity = () => {
         setDialogOpen(false);
-        reRegister(); // 再来一遍
+        // Re-take photo and call reRegister with forceOverrideLowSimilarity = true
+        reRegister(true, false); 
     };
-    const handleSendRequest = () => {
-        setDialogOpen(false);
-        if (!logId) {
-            showToastError('LogIdがありません。');
-            return;
-        }
-        let formData = new FormData();
-        formData.append('log_id', String(logId));
-        formData.append('reason', '相似度が低いので管理者に確認お願いします。');
-
-        fetch('/api/re_register_approval_request', {
-            method: 'POST',
-            body: formData,
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                showToastInfo(data.message || '送信しました。管理者承認待ち');
-            })
-            .catch((err) => {
-                console.error(err);
-                showToastError('送信失敗:' + err.message);
-            });
-    };
-    const handleCancel = () => {
+    // handleCancel (from original) can be reused for the cancel button
+    const handleCancelLowSimilarity = () => {
         setDialogOpen(false);
         showToastInfo('再登録をキャンセルしました');
     };
 
-    // ========== 7) 人脸验证(Verify)逻辑 ==========
-    const verifyFace = () => {
+
+    // OLD lowSimilarityRequest handlers (keep if you might re-enable admin approval)
+    // const handleRetry = () => { setDialogOpen(false); reRegister(); };
+    // const handleSendRequest = () => { /* ... (original logic for sending request to admin) ... */ };
+    // const handleCancel = () => { setDialogOpen(false); showToastInfo('再登録をキャンセルしました'); };
+
+
+    const verifyFace = () => { /* ... (no changes needed) ... */ 
         if (!videoRef.current) {
             showToastError('ビデオが準備できていません');
             return;
@@ -349,7 +288,6 @@ const ReRegister: React.FC = () => {
                     if (data.error) {
                         showToastError('認証失敗しました: ' + data.error);
                     } else if (data.found_faces && data.found_faces.length > 0) {
-                        // 多人
                         const info = data.found_faces
                             .map((f: any) => {
                                 const similarity = f.similarity ? f.similarity.toFixed(2) : 'N/A';
@@ -379,6 +317,7 @@ const ReRegister: React.FC = () => {
             <Sidebar />
             <div className="flex-1 flex flex-col items-center justify-center p-10">
                 {/* =========== 管理员密码对话框 =========== */}
+                {/* ... (no changes needed) ... */}
                 <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
                     <DialogTitle style={{ fontSize: '1.5rem' }}>管理者パスワード</DialogTitle>
                     <DialogContent>
@@ -409,7 +348,7 @@ const ReRegister: React.FC = () => {
                     </DialogActions>
                 </Dialog>
 
-                {/* =========== 相似度/override 对话框 =========== */}
+                {/* =========== 相似度/override 对话框 - Modified =========== */}
                 <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
                     <DialogTitle style={{ fontSize: '1.5rem' }}>確認</DialogTitle>
                     <DialogContent>
@@ -419,48 +358,27 @@ const ReRegister: React.FC = () => {
                         />
                     </DialogContent>
                     <DialogActions>
+                        {/* Legacy Confirm Dialog (Yes/No) */}
                         {dialogMode === 'confirm' && (
                             <>
-                                <Button
-                                    onClick={handleNo}
-                                    style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}
-                                >
-                                    No
-                                </Button>
-                                <Button
-                                    onClick={handleYes}
-                                    style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
-                                >
-                                    Yes
-                                </Button>
+                                <Button onClick={handleNo} style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}>No</Button>
+                                <Button onClick={handleYesLegacy} style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}>Yes</Button>
                             </>
                         )}
-                        {dialogMode === 'lowSimilarity' && (
+                        {/* New Low Similarity Confirm Dialog (确定继续/取消) */}
+                        {dialogMode === 'lowSimilarityConfirm' && (
                             <>
-                                <Button
-                                    onClick={handleRetry}
-                                    style={{ backgroundColor: 'green', color: 'white', fontSize: '1.25rem' }}
-                                >
-                                    再試行
-                                </Button>
-                                <Button
-                                    onClick={handleSendRequest}
-                                    style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
-                                >
-                                    送信
-                                </Button>
-                                <Button
-                                    onClick={handleCancel}
-                                    style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}
-                                >
-                                    キャンセル
-                                </Button>
+                                <Button onClick={handleCancelLowSimilarity} style={{ backgroundColor: 'gray', color: 'white', fontSize: '1.25rem' }}>キャンセル</Button>
+                                <Button onClick={handleForceProceedLowSimilarity} style={{ backgroundColor: 'orange', color: 'white', fontSize: '1.25rem' }}>確定 (続行)</Button>
                             </>
                         )}
+                        {/* Old lowSimilarityRequest dialog buttons - remove or keep if needed for other flows */}
+                        {/* {dialogMode === 'lowSimilarityRequest' && ( ... )} */}
                     </DialogActions>
                 </Dialog>
 
                 {/* ======== 摄像头 ======== */}
+                {/* ... (no changes needed) ... */}
                 <video
                     ref={videoRef}
                     width="640"
@@ -471,7 +389,8 @@ const ReRegister: React.FC = () => {
                 ></video>
 
                 {/* ======== 两个主要按钮: [再登録][認証] ======== */}
-                {!videoStarted ? (
+                {/* ... (no changes needed, checkPasswordAndReRegister calls the modified reRegister) ... */}
+                 {!videoStarted ? (
                     <button
                         onClick={startVideo}
                         className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 ..."
@@ -480,7 +399,6 @@ const ReRegister: React.FC = () => {
                     </button>
                 ) : (
                     <div className="flex space-x-4 mt-4">
-                        {/* "再登録" => 先校验密码 => reRegister */}
                         <button
                             onClick={checkPasswordAndReRegister}
                             disabled={isReRegistering}
@@ -488,8 +406,6 @@ const ReRegister: React.FC = () => {
                         >
                             {reRegisterBtnText}
                         </button>
-
-                        {/* "認証" => verifyFace */}
                         <button
                             onClick={verifyFace}
                             disabled={isVerifying}
@@ -504,6 +420,7 @@ const ReRegister: React.FC = () => {
                 )}
 
                 {/* ========== 编号 & 姓名输入框 ========== */}
+                {/* ... (no changes needed) ... */}
                 <div className="mt-4 flex space-x-4">
                     <input
                         type="text"
@@ -520,11 +437,8 @@ const ReRegister: React.FC = () => {
                         className="px-4 py-2 border text-lg rounded-lg focus:outline-none ..."
                     />
                 </div>
-
-                {/* 状态信息 */}
                 <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
             </div>
-
             <ToastContainer />
         </div>
     );
