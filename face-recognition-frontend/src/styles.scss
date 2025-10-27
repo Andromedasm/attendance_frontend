@@ -5,20 +5,43 @@
   width: 250px;
   height: 100%;
   background-color: #2e3b4e;
-  transition: width 0.3s;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
   z-index: 1000;
+
+  &.open {
+    transform: translateX(0);
+  }
 
   .menu-item {
     display: flex;
     align-items: center;
     padding: 10px 20px;
     color: white;
+    position: relative;
+    transition: background-color 0.2s, color 0.2s;
+    text-decoration: none;
+    border-radius: 0.375rem; /* 默认圆角 */
 
     .menu-icon {
       width: 35px;
       min-width: 35px;
       text-align: center;
       margin-right: 10px;
+    }
+
+    &:hover {
+      background-color: #3a475c;
+      color: white;
+    }
+
+    &.active {
+      background-color: #e5e7eb; /* 右侧背景色 */
+      color: #2e3b4e; /* 原本的背景颜色 */
+      font-weight: bold;
+      border-radius: 0.375rem; /* 保持圆角 */
+      margin-right: -10px; /* 减少缝隙 */
+      padding-right: 30px; /* 确保文本不会被裁剪 */
     }
   }
 
@@ -29,4 +52,30 @@
     padding: 10px 20px;
     text-align: left; /* 左对齐 */
   }
+
+  .sidebar-title {
+    color: white;
+  }
 }
+
+.sidebar-toggle-button {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background-color: transparent;
+  color: #ff6347; /* 设置为彩色 */
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 1100; /* 确保在 sidebar 之上 */
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(255, 99, 71, 0.1); /* 彩色的透明背景 */
+  }
+
+  i {
+    font-size: 1.5rem;
+  }
+}
+
