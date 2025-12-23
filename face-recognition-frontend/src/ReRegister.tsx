@@ -1,447 +1,565 @@
 import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+} from '@mui/material';
 import './styles.scss';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const HEADER_H = 84;
+
 const ReRegister: React.FC = () => {
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    const [employeeNumber, setEmployeeNumber] = useState('');
-    const [employeeName, setEmployeeName] = useState('');
+  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
 
-    const [status, setStatus] = useState('');
-    const [videoStarted, setVideoStarted] = useState<boolean>(false);
-    const [isReRegistering, setIsReRegistering] = useState(false);
-    const [reRegisterBtnText, setReRegisterBtnText] = useState('再登録開始');
-    const [reRegisterBtnClass, setReRegisterBtnClass] = useState(
-        'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none ...'
-    );
+  const [status, setStatus] = useState('');
+  const [videoStarted, setVideoStarted] = useState(false);
 
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogContent, setDialogContent] = useState('');
-    // Add new mode for low similarity confirmation
-    const [dialogMode, setDialogMode] = useState<'confirm' | 'lowSimilarityRequest' | 'lowSimilarityConfirm' | ''>('');
-    const [logId, setLogId] = useState<number | null>(null); // Kept for 'lowSimilarityRequest' if ever re-enabled
-    const [currentSimilarityScore, setCurrentSimilarityScore] = useState<number | null>(null);
+  const [isReRegistering, setIsReRegistering] = useState(false);
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogContent, setDialogContent] = useState('');
+  const [dialogMode, setDialogMode] = useState<
+    'confirm' | 'lowSimilarityRequest' | 'lowSimilarityConfirm' | ''
+  >('');
+  const [logId, setLogId] = useState<number | null>(null); // kept (unused in current flow)
+  const [currentSimilarityScore, setCurrentSimilarityScore] = useState<number | null>(null);
 
-    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-    const [adminPassword, setAdminPassword] = useState('');
-    const [lastAuthTime, setLastAuthTime] = useState<number | null>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [lastAuthTime, setLastAuthTime] = useState<number | null>(null);
 
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [verifyText, setVerifyText] = useState('認証');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyText, setVerifyText] = useState('認証');
 
-    const showToastError = (msg: string) => { toast.error(msg, { autoClose: 5000 }); };
-    const showToastInfo = (msg: string) => { toast.info(msg, { autoClose: 5000 }); };
-    const showToastInfoHTML = (htmlStr: string) => { toast.info(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 }); };
-    const showToastSuccessHTML = (htmlStr: string) => { toast.success(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 }); };
+  const showToastError = (msg: string) => toast.error(msg, { autoClose: 5000 });
+  const showToastInfo = (msg: string) => toast.info(msg, { autoClose: 5000 });
+  const showToastInfoHTML = (htmlStr: string) =>
+    toast.info(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
+  const showToastSuccessHTML = (htmlStr: string) =>
+    toast.success(<div dangerouslySetInnerHTML={{ __html: htmlStr }} />, { autoClose: 5000 });
 
-    const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const number = e.target.value;
-        setEmployeeNumber(number);
-        // ... (rest of the function is fine) ...
-        if (number.trim() !== '') {
-            fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.employeeName) {
-                        setEmployeeName(data.employeeName);
-                        setStatus(`取得した社員名: ${data.employeeName}`);
-                    } else {
-                        setEmployeeName('');
-                        setStatus('該当社員が見つかりません');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error fetching employee name:', error);
-                    setStatus('社員名を取得できませんでした');
-                });
-        } else {
+  const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const number = e.target.value;
+    setEmployeeNumber(number);
+
+    if (number.trim() !== '') {
+      fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.employeeName) {
+            setEmployeeName(data.employeeName);
+            setStatus(`取得した社員名: ${data.employeeName}`);
+          } else {
             setEmployeeName('');
-            setStatus('');
-        }
-    };
-
-    const startVideo = () => { /* ... (no changes needed) ... */ 
-        navigator.mediaDevices
-            .getUserMedia({ video: { width: 640, height: 480 } })
-            .then((stream) => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    setVideoStarted(true);
-                }
-            })
-            .catch((error) => {
-                console.error('Error accessing media devices.', error);
-                showToastError('ビデオを開始できません: ' + error.message);
-            });
-    };
-
-    const checkPasswordAndReRegister = () => { /* ... (no changes needed) ... */ 
-        if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
-            reRegister(); // Initial call, no special flags
-        } else {
-            setPasswordDialogOpen(true);
-        }
-    };
-    const closePasswordDialog = () => { /* ... (no changes needed) ... */ 
-        setPasswordDialogOpen(false);
-        setAdminPassword('');
-    };
-    const handlePasswordSubmit = () => { /* ... (no changes needed) ... */ 
-        if (!adminPassword.trim()) {
-            showToastError('パスワードを入力してください');
-            return;
-        }
-        let formData = new FormData();
-        formData.append('password', adminPassword);
-
-        fetch('/api/check_admin_password', {
-            method: 'POST',
-            body: formData,
+            setStatus('該当社員が見つかりません');
+          }
         })
-            .then(async (res) => {
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    throw new Error(body?.detail || '認証失敗');
-                }
-                return res.json();
-            })
-            .then(() => {
-                setLastAuthTime(Date.now());
-                closePasswordDialog();
-                showToastInfo('パスワード認証成功');
-                reRegister(); // Initial call, no special flags
-            })
-            .catch((err) => {
-                showToastError('パスワードが違います: ' + err.message);
-            });
-    };
-    
-    const resetReRegisterButton = () => {
-        setIsReRegistering(false);
-        // setStatus(''); // Keep status message from backend if any
-        setReRegisterBtnText('再登録開始');
-        setReRegisterBtnClass(
-            'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 ...'
-        );
-    };
-
-    // ========== 4) 人脸重新注册(主要逻辑) - Modified for new flow ==========
-    // This function is for the *initial* re-registration attempt
-    const reRegister = (forceOverrideLowSimilarity = false, isLegacyOverride = false) => {
-        if (!employeeNumber.trim() || !employeeName.trim()) {
-            showToastError('社員番号と名前を記入してください');
-            return;
-        }
-        setIsReRegistering(true);
-        setReRegisterBtnText('再登録中...');
-        setReRegisterBtnClass('mt-4 px-6 py-3 bg-gray-400 text-white ...');
-        setStatus('アップロード中...');
-
-        const canvas = document.createElement('canvas');
-        const video = videoRef.current;
-        if (!video) {
-            showToastError('ビデオが準備できていません');
-            resetReRegisterButton();
-            return;
-        }
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                resetReRegisterButton();
-                return;
-            }
-
-            let formData = new FormData();
-            formData.append('image', blob, employeeNumber + '.png');
-            formData.append('employeeNumber', employeeNumber);
-            formData.append('employeeName', employeeName);
-
-            if (forceOverrideLowSimilarity) {
-                formData.append('force_override_low_similarity', 'true');
-            }
-            if (isLegacyOverride) { // For the old 'confirm' dialog path
-                formData.append('override', 'true');
-            }
-
-
-            fetch('/api/re_register', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(async (res) => { // Added async to handle potential error response body
-                if (!res.ok) {
-                    // Try to parse error from backend if not 2xx
-                    const errorData = await res.json().catch(() => ({ detail: "サーバーエラー" }));
-                    throw new Error(errorData.detail || errorData.error || `HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then((data) => {
-                console.log('re_register result:', data);
-                setStatus(data.message || ''); // Display message from backend
-
-                if (data.error) {
-                     showToastError(data.error);
-                } else if (data.similarity_check === true) { // High similarity, backend handled it
-                    showToastSuccessHTML(data.message || '再登録が完了しました (類似度良好)');
-                } else if (data.similarity_check === false && data.similarity_score !== undefined) { // Low similarity, ask user
-                    setCurrentSimilarityScore(data.similarity_score);
-                    setDialogContent(data.message || `類似度 ${data.similarity_score.toFixed(2)} < 0.5。続行しますか？`);
-                    setDialogMode('lowSimilarityConfirm'); 
-                    setDialogOpen(true);
-                } else if (data.override_needed) { // Fallback for old logic / specific backend response
-                    setDialogContent(data.message || '社員番号既に存在します。上書きしますか？');
-                    setDialogMode('confirm'); // Original confirm dialog
-                    setDialogOpen(true);
-                } else { // Generic success or info
-                    showToastInfo(data.message || '再登録処理が完了しました。');
-                }
-            })
-            .catch((error) => {
-                setStatus('');
-                console.error('Error re_register:', error);
-                showToastError('再登録エラー: ' + error.message);
-            })
-            .finally(() => {
-                resetReRegisterButton();
-            });
+        .catch((error) => {
+          console.error('Error fetching employee name:', error);
+          setStatus('社員名を取得できませんでした');
         });
-    };
+    } else {
+      setEmployeeName('');
+      setStatus('');
+    }
+  };
 
-
-    // ========== 5) 覆盖对话框(Yes/No) - For legacy 'confirm' dialog ==========
-    // This handles the 'confirm' dialog which might be triggered by 'override_needed'
-    const handleYesLegacy = () => {
-        setDialogOpen(false);
-        // Re-take photo and call reRegister with isLegacyOverride = true
-        reRegister(false, true); // Sets 'override: true' in backend call
-    };
-    const handleNo = () => {
-        setDialogOpen(false);
-        showToastInfo('再登録をキャンセルしました');
-    };
-
-    // ========== 6) 相似度<0.5 => [确定继续] / [取消] ==========
-    // This handles the NEW 'lowSimilarityConfirm' dialog
-    const handleForceProceedLowSimilarity = () => {
-        setDialogOpen(false);
-        // Re-take photo and call reRegister with forceOverrideLowSimilarity = true
-        reRegister(true, false); 
-    };
-    // handleCancel (from original) can be reused for the cancel button
-    const handleCancelLowSimilarity = () => {
-        setDialogOpen(false);
-        showToastInfo('再登録をキャンセルしました');
-    };
-
-
-    // OLD lowSimilarityRequest handlers (keep if you might re-enable admin approval)
-    // const handleRetry = () => { setDialogOpen(false); reRegister(); };
-    // const handleSendRequest = () => { /* ... (original logic for sending request to admin) ... */ };
-    // const handleCancel = () => { setDialogOpen(false); showToastInfo('再登録をキャンセルしました'); };
-
-
-    const verifyFace = () => { /* ... (no changes needed) ... */ 
-        if (!videoRef.current) {
-            showToastError('ビデオが準備できていません');
-            return;
+  const startVideo = () => {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      })
+      .then(async (stream) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch {}
+          setVideoStarted(true);
         }
-        setIsVerifying(true);
-        setVerifyText('認証中...');
+      })
+      .catch((error) => {
+        console.error('Error accessing media devices.', error);
+        showToastError('ビデオを開始できません: ' + error.message);
+      });
+  };
 
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+  const stopVideo = () => {
+    const v = videoRef.current;
+    const stream = v?.srcObject as MediaStream | null;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    if (v) v.srcObject = null;
+    setVideoStarted(false);
+  };
 
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                setIsVerifying(false);
-                setVerifyText('認証');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('image', blob);
+  const closePasswordDialog = () => {
+    setPasswordDialogOpen(false);
+    setAdminPassword('');
+  };
 
-            fetch('/api/verify', {
-                method: 'POST',
-                body: formData,
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    if (data.error) {
-                        showToastError('認証失敗しました: ' + data.error);
-                    } else if (data.found_faces && data.found_faces.length > 0) {
-                        const info = data.found_faces
-                            .map((f: any) => {
-                                const similarity = f.similarity ? f.similarity.toFixed(2) : 'N/A';
-                                return `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${similarity}`;
-                            })
-                            .join('<br/>');
-                        showToastSuccessHTML(`以下の顔が認証されました:<br/>${info}`);
-                    } else if (data.message) {
-                        showToastInfoHTML(data.message);
-                    } else {
-                        showToastInfo('認証結果を取得できませんでした');
-                    }
-                })
-                .catch((err) => {
-                    console.error(err);
-                    showToastError('認証失敗しました: ' + err.message);
-                })
-                .finally(() => {
-                    setIsVerifying(false);
-                    setVerifyText('認証');
-                });
+  const handlePasswordSubmit = () => {
+    if (!adminPassword.trim()) {
+      showToastError('パスワードを入力してください');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('password', adminPassword);
+
+    fetch('/api/check_admin_password', { method: 'POST', body: formData })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.detail || '認証失敗');
+        }
+        return res.json();
+      })
+      .then(() => {
+        setLastAuthTime(Date.now());
+        closePasswordDialog();
+        showToastInfo('パスワード認証成功');
+        reRegister(); // initial call
+      })
+      .catch((err) => {
+        showToastError('パスワードが違います: ' + err.message);
+      });
+  };
+
+  const resetReRegisterState = () => {
+    setIsReRegistering(false);
+    // status is kept (backend message / name lookup message)
+  };
+
+  // main re-register
+  const reRegister = (forceOverrideLowSimilarity = false, isLegacyOverride = false) => {
+    if (!employeeNumber.trim() || !employeeName.trim()) {
+      showToastError('社員番号と名前を記入してください');
+      return;
+    }
+    if (!videoRef.current) {
+      showToastError('ビデオが準備できていません');
+      return;
+    }
+
+    setIsReRegistering(true);
+    setStatus('アップロード中...');
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToastError('画像を取得できませんでした');
+        resetReRegisterState();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', blob, employeeNumber + '.png');
+      formData.append('employeeNumber', employeeNumber);
+      formData.append('employeeName', employeeName);
+
+      if (forceOverrideLowSimilarity) formData.append('force_override_low_similarity', 'true');
+      if (isLegacyOverride) formData.append('override', 'true');
+
+      fetch('/api/re_register', { method: 'POST', body: formData })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ detail: 'サーバーエラー' }));
+            throw new Error(errorData.detail || errorData.error || `HTTP ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setStatus(data.message || '');
+
+          if (data.error) {
+            showToastError(data.error);
+            return;
+          }
+
+          if (data.similarity_check === true) {
+            showToastSuccessHTML(data.message || '再登録が完了しました');
+            return;
+          }
+
+          if (data.similarity_check === false && data.similarity_score !== undefined) {
+            setCurrentSimilarityScore(data.similarity_score);
+            setDialogContent(
+              data.message ||
+                `類似度 ${Number(data.similarity_score).toFixed(2)} が低いです。続行しますか？`
+            );
+            setDialogMode('lowSimilarityConfirm');
+            setDialogOpen(true);
+            return;
+          }
+
+          if (data.override_needed) {
+            setDialogContent(data.message || '上書きしますか？');
+            setDialogMode('confirm');
+            setDialogOpen(true);
+            return;
+          }
+
+          showToastInfoHTML(data.message || '再登録処理が完了しました。');
+        })
+        .catch((error) => {
+          console.error('Error re_register:', error);
+          setStatus('');
+          showToastError('再登録エラー: ' + error.message);
+        })
+        .finally(() => {
+          resetReRegisterState();
         });
-    };
+    }, 'image/jpeg', 0.9);
+  };
 
-    return (
-        <div className="flex h-screen font-sans antialiased bg-gray-200">
-            <Sidebar />
-            <div className="flex-1 flex flex-col items-center justify-center p-10">
-                {/* =========== 管理员密码对话框 =========== */}
-                {/* ... (no changes needed) ... */}
-                <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
-                    <DialogTitle style={{ fontSize: '1.5rem' }}>管理者パスワード</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText style={{ fontSize: '1.25rem' }}>
-                            顔再登録を行うには管理者パスワードを入力してください
-                        </DialogContentText>
-                        <input
-                            type="password"
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            className="mt-4 px-4 py-2 border text-lg rounded-lg"
-                            placeholder="パスワード"
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={closePasswordDialog}
-                            style={{ backgroundColor: 'gray', color: 'white', fontSize: '1.25rem' }}
-                        >
-                            キャンセル
-                        </Button>
-                        <Button
-                            onClick={handlePasswordSubmit}
-                            style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
-                        >
-                            OK
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+  const checkPasswordAndReRegister = () => {
+    // 15 分以内は再認証不要
+    if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
+      reRegister();
+    } else {
+      setPasswordDialogOpen(true);
+    }
+  };
 
-                {/* =========== 相似度/override 对话框 - Modified =========== */}
-                <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-                    <DialogTitle style={{ fontSize: '1.5rem' }}>確認</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText
-                            style={{ fontSize: '1.25rem' }}
-                            dangerouslySetInnerHTML={{ __html: dialogContent }}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        {/* Legacy Confirm Dialog (Yes/No) */}
-                        {dialogMode === 'confirm' && (
-                            <>
-                                <Button onClick={handleNo} style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}>No</Button>
-                                <Button onClick={handleYesLegacy} style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}>Yes</Button>
-                            </>
-                        )}
-                        {/* New Low Similarity Confirm Dialog (确定继续/取消) */}
-                        {dialogMode === 'lowSimilarityConfirm' && (
-                            <>
-                                <Button onClick={handleCancelLowSimilarity} style={{ backgroundColor: 'gray', color: 'white', fontSize: '1.25rem' }}>キャンセル</Button>
-                                <Button onClick={handleForceProceedLowSimilarity} style={{ backgroundColor: 'orange', color: 'white', fontSize: '1.25rem' }}>確定 (続行)</Button>
-                            </>
-                        )}
-                        {/* Old lowSimilarityRequest dialog buttons - remove or keep if needed for other flows */}
-                        {/* {dialogMode === 'lowSimilarityRequest' && ( ... )} */}
-                    </DialogActions>
-                </Dialog>
+  // legacy override dialog
+  const handleYesLegacy = () => {
+    setDialogOpen(false);
+    reRegister(false, true);
+  };
+  const handleNo = () => {
+    setDialogOpen(false);
+    showToastInfo('キャンセルしました');
+  };
 
-                {/* ======== 摄像头 ======== */}
-                {/* ... (no changes needed) ... */}
-                <video
-                    ref={videoRef}
-                    width="640"
-                    height="480"
-                    autoPlay
-                    playsInline
-                    className="rounded-lg shadow-lg mb-4"
-                ></video>
+  // low similarity confirm dialog
+  const handleForceProceedLowSimilarity = () => {
+    setDialogOpen(false);
+    reRegister(true, false);
+  };
+  const handleCancelLowSimilarity = () => {
+    setDialogOpen(false);
+    showToastInfo('キャンセルしました');
+  };
 
-                {/* ======== 两个主要按钮: [再登録][認証] ======== */}
-                {/* ... (no changes needed, checkPasswordAndReRegister calls the modified reRegister) ... */}
-                 {!videoStarted ? (
-                    <button
-                        onClick={startVideo}
-                        className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 ..."
-                    >
-                        Start Video
-                    </button>
+  const verifyFace = () => {
+    if (!videoRef.current) {
+      showToastError('ビデオが準備できていません');
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerifyText('認証中...');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToastError('画像を取得できませんでした');
+        setIsVerifying(false);
+        setVerifyText('認証');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', blob);
+
+      fetch('/api/verify', { method: 'POST', body: formData })
+        .then((response) => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then((data) => {
+          if (data.error) {
+            showToastError('認証失敗しました: ' + data.error);
+          } else if (data.found_faces && data.found_faces.length > 0) {
+            const info = data.found_faces
+              .map((f: any) => {
+                const similarity = f.similarity ? f.similarity.toFixed(2) : 'N/A';
+                return `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${similarity}`;
+              })
+              .join('<br/>');
+            showToastSuccessHTML(`以下の顔が認証されました:<br/>${info}`);
+          } else if (data.message) {
+            showToastInfoHTML(data.message);
+          } else {
+            showToastInfo('認証結果を取得できませんでした');
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          showToastError('認証失敗しました: ' + err.message);
+        })
+        .finally(() => {
+          setIsVerifying(false);
+          setVerifyText('認証');
+        });
+    }, 'image/jpeg', 0.9);
+  };
+
+  const canOperate = videoStarted;
+  const canReRegister = canOperate && !isReRegistering;
+  const canVerify = canOperate && !isVerifying;
+
+  return (
+    <div className="h-dvh overflow-hidden bg-slate-100">
+      <div className="flex h-dvh overflow-hidden">
+        <Sidebar />
+
+        <div className="flex-1 overflow-hidden">
+          {/* 极简 header：左侧留汉堡按钮位，右侧只放 ON/OFF + Start/Stop */}
+          <header
+            className="border-b border-black/5 bg-white/80 backdrop-blur"
+            style={{ height: HEADER_H }}
+          >
+            <div className="flex h-full items-center justify-between px-6">
+              <div className="w-16 shrink-0" aria-hidden="true" />
+
+              <div className="flex items-center gap-3">
+                <span
+                  className={[
+                    'rounded-full px-4 py-2 text-sm font-semibold',
+                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
+                  ].join(' ')}
+                >
+                  {videoStarted ? 'ON' : 'OFF'}
+                </span>
+
+                {!videoStarted ? (
+                  <button
+                    onClick={startVideo}
+                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  >
+                    Start
+                  </button>
                 ) : (
-                    <div className="flex space-x-4 mt-4">
-                        <button
-                            onClick={checkPasswordAndReRegister}
-                            disabled={isReRegistering}
-                            className={reRegisterBtnClass}
-                        >
-                            {reRegisterBtnText}
-                        </button>
-                        <button
-                            onClick={verifyFace}
-                            disabled={isVerifying}
-                            className="mt-4 px-6 py-3 text-white font-semibold text-xl rounded-lg shadow-md
-                                       bg-gradient-to-r from-purple-500 via-pink-500 to-red-500
-                                       hover:from-purple-600 hover:via-pink-600 hover:to-red-600
-                                       transition-all duration-300"
-                        >
-                            {verifyText}
-                        </button>
-                    </div>
+                  <button
+                    onClick={stopVideo}
+                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
+                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  >
+                    Stop
+                  </button>
                 )}
-
-                {/* ========== 编号 & 姓名输入框 ========== */}
-                {/* ... (no changes needed) ... */}
-                <div className="mt-4 flex space-x-4">
-                    <input
-                        type="text"
-                        value={employeeNumber}
-                        onChange={handleEmployeeNumberChange}
-                        placeholder="社員番号"
-                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none ..."
-                    />
-                    <input
-                        type="text"
-                        value={employeeName}
-                        onChange={(e) => setEmployeeName(e.target.value)}
-                        placeholder="社員名"
-                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none ..."
-                    />
-                </div>
-                <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
+              </div>
             </div>
-            <ToastContainer />
+          </header>
+
+          <main
+            className="overflow-auto px-6 py-6"
+            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
+          >
+            <div className="grid grid-cols-[2.35fr_1fr] gap-6">
+              {/* 左：视频（未启动时：区域内大按钮） */}
+              <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
+                  <div className="aspect-video w-full">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  {!videoStarted && (
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
+                      <button
+                        onClick={startVideo}
+                        className="h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                      >
+                        Start Camera
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {status && (
+                  <div className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-black/5">
+                    <p className="text-base font-semibold text-slate-700">{status}</p>
+                  </div>
+                )}
+              </section>
+
+              {/* 右：员工号 + 自动姓名（只读）+ 两个大按钮 */}
+              <aside className="flex flex-col gap-6">
+                <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                  <div className="space-y-5">
+                    <input
+                      type="text"
+                      value={employeeNumber}
+                      onChange={handleEmployeeNumberChange}
+                      placeholder="社員番号"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg text-slate-900
+                                 placeholder:text-slate-400 shadow-sm outline-none
+                                 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                    />
+
+                    <input
+                      type="text"
+                      value={employeeName}
+                      readOnly
+                      placeholder="社員名（自動）"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-lg text-slate-900
+                                 placeholder:text-slate-400 shadow-sm outline-none
+                                 ring-1 ring-black/5"
+                    />
+                  </div>
+                </section>
+
+                <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                  <div className="grid grid-cols-1 gap-4">
+                    <button
+                      onClick={checkPasswordAndReRegister}
+                      disabled={!canReRegister}
+                      className={[
+                        'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
+                        canReRegister
+                          ? 'bg-blue-600 hover:bg-blue-700'
+                          : 'bg-slate-300 cursor-not-allowed',
+                      ].join(' ')}
+                    >
+                      {isReRegistering ? '再登録中...' : '再登録'}
+                    </button>
+
+                    <button
+                      onClick={verifyFace}
+                      disabled={!canVerify}
+                      className={[
+                        'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2',
+                        canVerify
+                          ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-rose-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-rose-700'
+                          : 'bg-slate-300 cursor-not-allowed',
+                      ].join(' ')}
+                    >
+                      {verifyText}
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </main>
+
+          {/* 管理者パスワード */}
+          <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
+            <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>
+              管理者パスワード
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
+                顔再登録を行うには管理者パスワードを入力してください
+              </DialogContentText>
+
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="mt-4 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-lg outline-none
+                           focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                placeholder="パスワード"
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={closePasswordDialog}
+                variant="contained"
+                style={{ backgroundColor: '#64748b', color: 'white', fontSize: '1rem' }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={handlePasswordSubmit}
+                variant="contained"
+                style={{ backgroundColor: '#2563eb', color: 'white', fontSize: '1rem' }}
+              >
+                OK
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 確認（override / 低類似度） */}
+          <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+            <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>確認</DialogTitle>
+            <DialogContent>
+              <DialogContentText
+                style={{ fontSize: '1.1rem', lineHeight: 1.8 }}
+                dangerouslySetInnerHTML={{ __html: dialogContent }}
+              />
+              {/* debug / optional: show similarity */}
+              {dialogMode === 'lowSimilarityConfirm' && currentSimilarityScore !== null && (
+                <p style={{ marginTop: 12, fontSize: '1rem', color: '#334155' }}>
+                  類似度: {currentSimilarityScore.toFixed(2)}
+                </p>
+              )}
+            </DialogContent>
+            <DialogActions>
+              {dialogMode === 'confirm' && (
+                <>
+                  <Button
+                    onClick={handleNo}
+                    variant="contained"
+                    style={{ backgroundColor: '#ef4444', color: 'white', fontSize: '1rem' }}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    onClick={handleYesLegacy}
+                    variant="contained"
+                    style={{ backgroundColor: '#2563eb', color: 'white', fontSize: '1rem' }}
+                  >
+                    Yes
+                  </Button>
+                </>
+              )}
+
+              {dialogMode === 'lowSimilarityConfirm' && (
+                <>
+                  <Button
+                    onClick={handleCancelLowSimilarity}
+                    variant="contained"
+                    style={{ backgroundColor: '#64748b', color: 'white', fontSize: '1rem' }}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    onClick={handleForceProceedLowSimilarity}
+                    variant="contained"
+                    style={{ backgroundColor: '#f59e0b', color: 'white', fontSize: '1rem' }}
+                  >
+                    続行
+                  </Button>
+                </>
+              )}
+            </DialogActions>
+          </Dialog>
+
+          <ToastContainer />
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default ReRegister;

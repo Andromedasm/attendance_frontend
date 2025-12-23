@@ -1,382 +1,417 @@
 import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
 } from '@mui/material';
 
 import './styles.scss';
 
-// 引入 react-toastify
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const HEADER_H = 84;
+
 const Capture: React.FC = () => {
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    // 待输入的员工编号、姓名
-    const [employeeNumber, setEmployeeNumber] = useState('');
-    const [employeeName, setEmployeeName] = useState('');
-    const [message, setMessage] = useState(''); // 显示"取得した社員名"或"見つかりません"等
-    const [status, setStatus] = useState('');  // 显示"アップロード中..."等
-    const [videoStarted, setVideoStarted] = useState(false);
+  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('');
+  const [videoStarted, setVideoStarted] = useState(false);
 
-    // 确认框 (保留原先逻辑)
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [confirmMessage, setConfirmMessage] = useState('');
-    const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
 
-    // 控制“登録開始”按钮
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [registerBtnText, setRegisterBtnText] = useState('登録開始');
-    const [registerBtnClass, setRegisterBtnClass] = useState(
-        'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75'
-    );
+  const [isRegistering, setIsRegistering] = useState(false);
 
-    // toast 帮助函数
-    const showToastError = (msg: string) => {
-        toast.error(msg, { autoClose: 5000 });
-    };
-    const showToastSuccess = (html: string) => {
-        toast.success(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
-    };
-    const showToastInfo = (html: string) => {
-        toast.info(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
-    };
+  const showToastError = (msg: string) => toast.error(msg, { autoClose: 5000 });
+  const showToastSuccess = (html: string) =>
+    toast.success(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
+  const showToastInfo = (html: string) =>
+    toast.info(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
 
-    // 确认框
-    const showConfirm = (msg: string, callback: () => void) => {
-        setConfirmMessage(msg);
-        setConfirmCallback(() => callback);
-        setConfirmOpen(true);
-    };
+  const showConfirm = (msg: string, callback: () => void) => {
+    setConfirmMessage(msg);
+    setConfirmCallback(() => callback);
+    setConfirmOpen(true);
+  };
 
-    // 当 employeeNumber 改变时，自动获取数据库中姓名
-    const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const number = e.target.value;
-        setEmployeeNumber(number);
+  const handleEmployeeNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const number = e.target.value;
+    setEmployeeNumber(number);
 
-        if (number.trim() !== '') {
-            fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.employeeName) {
-                        setEmployeeName(data.employeeName);
-                        setMessage(`取得した社員名: ${data.employeeName}`);
-                    } else {
-                        setEmployeeName('');
-                        setMessage('該当社員が見つかりません');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error fetching employee name:', error);
-                    setMessage('社員名を取得できませんでした');
-                });
-        } else {
-            // 若输入为空，清空姓名
+    if (number.trim() !== '') {
+      fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.employeeName) {
+            setEmployeeName(data.employeeName);
+            setMessage(`取得した社員名: ${data.employeeName}`);
+          } else {
             setEmployeeName('');
-            setMessage('');
-        }
-    };
+            setMessage('該当社員が見つかりません');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching employee name:', error);
+          setMessage('社員名を取得できませんでした');
+        });
+    } else {
+      setEmployeeName('');
+      setMessage('');
+    }
+  };
 
-    // 启动摄像头
-    const startVideo = () => {
-        navigator.mediaDevices
-            .getUserMedia({ video: { width: 640, height: 480 } })
-            .then((stream) => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    setVideoStarted(true);
-                }
-            })
-            .catch((error) => {
-                console.error('Error accessing media devices.', error);
-                showToastError('ビデオを開始できません: ' + error.message);
+  const startVideo = () => {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      })
+      .then(async (stream) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch {}
+          setVideoStarted(true);
+        }
+      })
+      .catch((error) => {
+        console.error('Error accessing media devices.', error);
+        showToastError('ビデオを開始できません: ' + error.message);
+      });
+  };
+
+  const stopVideo = () => {
+    const v = videoRef.current;
+    const stream = v?.srcObject as MediaStream | null;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    if (v) v.srcObject = null;
+    setVideoStarted(false);
+  };
+
+  const capture = () => {
+    if (!employeeNumber.trim() || !employeeName.trim()) {
+      showToastError('社員番号と名前を記入してください.');
+      return;
+    }
+
+    setIsRegistering(true);
+    setStatus('アップロード中...');
+
+    const video = videoRef.current;
+    if (!video) {
+      showToastError('ビデオが準備できていません');
+      resetRegisterButton();
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToastError('画像を取得できませんでした');
+        resetRegisterButton();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', blob, employeeNumber + '.png');
+      formData.append('employeeNumber', employeeNumber);
+      formData.append('employeeName', employeeName);
+
+      fetch('/api/upload', { method: 'POST', body: formData })
+        .then((response) => {
+          if (!response.ok) throw response;
+          return response.json();
+        })
+        .then((data) => {
+          setStatus('');
+          if (data.similar) {
+            const matchesInfo = data.matches
+              .map(
+                (match: any) =>
+                  `社員番号: ${match.employee_number}, 名前: ${match.employee_name}, 類似度: ${match.similarity.toFixed(
+                    2
+                  )}`
+              )
+              .join('<br />');
+
+            showConfirm(`類似な顔が存在します:<br />${matchesInfo}<br />アップロードしますか?`, () => {
+              formData.append('override', 'true');
+              fetch('/api/upload', { method: 'POST', body: formData })
+                .then((resp) => resp.json())
+                .then((data2) => showToastInfo(data2.message))
+                .catch((error) => showToastError('アップロードに失敗しました: ' + error.message));
             });
-    };
+          } else {
+            showToastInfo(data.message);
+          }
+        })
+        .catch((error) => {
+          setStatus('');
+          if ((error as any).json) {
+            (error as Response).json().then((body: any) => showToastError(body.error));
+          } else {
+            console.error('Error uploading the image.', error);
+            showToastError((error as Error).message);
+          }
+        })
+        .finally(() => resetRegisterButton());
+    }, 'image/jpeg', 0.9);
+  };
 
-    // ================== 注册人脸 (capture) ==================
-    const capture = () => {
-        if (!employeeNumber.trim() || !employeeName.trim()) {
-            showToastError('社員番号と名前を記入してください.');
-            return;
-        }
+  const resetRegisterButton = () => {
+    setIsRegistering(false);
+    setStatus('');
+  };
 
-        // 按钮进入“注册中”状态
-        setIsRegistering(true);
-        setRegisterBtnText('登録中...');
-        setRegisterBtnClass(
-            'mt-4 px-6 py-3 bg-gray-400 text-white font-semibold text-xl rounded-lg shadow-md cursor-not-allowed'
-        );
-        setStatus('アップロード中...');
+  const verifyFace = () => {
+    const video = videoRef.current;
+    if (!video) {
+      showToastError('ビデオが準備できていません');
+      return;
+    }
 
-        const video = videoRef.current;
-        if (!video) {
-            showToastError('ビデオが準備できていません');
-            resetRegisterButton();
-            return;
-        }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToastError('画像を取得できませんでした');
+        return;
+      }
 
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                resetRegisterButton();
-                return;
-            }
+      const formData = new FormData();
+      formData.append('image', blob);
 
-            const formData = new FormData();
-            formData.append('image', blob, employeeNumber + '.png');
-            formData.append('employeeNumber', employeeNumber);
-            formData.append('employeeName', employeeName);
-
-            fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw response;
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    setStatus('');
-                    if (data.similar) {
-                        // 存在相似人脸 => 用确认框
-                        const matchesInfo = data.matches
-                            .map(
-                                (match: any) =>
-                                    `社員番号: ${match.employee_number}, 名前: ${match.employee_name}, 類似度: ${match.similarity.toFixed(
-                                        2
-                                    )}`
-                            )
-                            .join('<br />');
-
-                        showConfirm(
-                            `類似な顔が存在します:<br />${matchesInfo}<br />アップロードしますか?`,
-                            () => {
-                                // 用户点击YES => 加一个 override = true 再上传
-                                formData.append('override', 'true');
-                                fetch('/api/upload', {
-                                    method: 'POST',
-                                    body: formData,
-                                })
-                                    .then((resp) => resp.json())
-                                    .then((data2) => {
-                                        showToastInfo(data2.message);
-                                    })
-                                    .catch((error) => {
-                                        showToastError('アップロードに失敗しました: ' + error.message);
-                                    });
-                            }
-                        );
-                    } else {
-                        // 注册成功(或失败信息)
-                        showToastInfo(data.message);
-                    }
-                })
-                .catch((error) => {
-                    setStatus('');
-                    if (error.json) {
-                        // 如果error是Response对象
-                        error.json().then((body: any) => {
-                            showToastError(body.error);
-                        });
-                    } else {
-                        console.error('Error uploading the image.', error);
-                        showToastError(error.message);
-                    }
-                })
-                .finally(() => {
-                    // 请求结束后恢复按钮
-                    resetRegisterButton();
-                });
+      fetch('/api/verify', { method: 'POST', body: formData })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            showToastError('認証失敗: ' + data.error);
+          } else if (data.found_faces?.length > 0) {
+            const info = data.found_faces
+              .map(
+                (f: any) =>
+                  `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${
+                    f.similarity?.toFixed(2) ?? 'N/A'
+                  }`
+              )
+              .join('<br/>');
+            showToastSuccess(`以下の顔が認証されました:<br/>${info}`);
+          } else if (data.message) {
+            showToastInfo(data.message);
+          } else {
+            showToastInfo('認証結果を取得できませんでした');
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          showToastError('認証エラー: ' + err.message);
         });
-    };
+    }, 'image/jpeg', 0.9);
+  };
 
-    // 重置“登録開始”按钮
-    const resetRegisterButton = () => {
-        setIsRegistering(false);
-        setStatus('');
-        setRegisterBtnText('登録開始');
-        setRegisterBtnClass(
-            'mt-4 px-6 py-3 bg-blue-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75'
-        );
-    };
+  const canOperate = videoStarted;
+  const canRegister = canOperate && !isRegistering;
 
-    // ================== 验证人脸 (verify) ==================
-    const verifyFace = () => {
-        const video = videoRef.current;
-        if (!video) {
-            showToastError('ビデオが準備できていません');
-            return;
-        }
+  return (
+    <div className="h-dvh overflow-hidden bg-slate-100">
+      <div className="flex h-dvh overflow-hidden">
+        <Sidebar />
 
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        <div className="flex-1 overflow-hidden">
+          <header
+            className="border-b border-black/5 bg-white/80 backdrop-blur"
+            style={{ height: HEADER_H }}
+          >
+            <div className="flex h-full items-center justify-between px-6">
+              {/* 给 Sidebar 左上角汉堡按钮留空 */}
+              <div className="w-16 shrink-0" aria-hidden="true" />
 
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('image', blob);
-
-            fetch('/api/verify', {
-                method: 'POST',
-                body: formData,
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.error) {
-                        showToastError('認証失敗: ' + data.error);
-                    } else if (data.found_faces?.length > 0) {
-                        // 多个 or 单个都显示
-                        const info = data.found_faces
-                            .map(
-                                (f: any) =>
-                                    `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${
-                                        f.similarity?.toFixed(2) ?? 'N/A'
-                                    }`
-                            )
-                            .join('<br/>');
-                        showToastSuccess(`以下の顔が認証されました:<br/>${info}`);
-                    } else if (data.message) {
-                        // 可能是 "一致する顔が見つかりませんでした"
-                        showToastInfo(data.message);
-                    } else {
-                        showToastInfo('認証結果を取得できませんでした');
-                    }
-                })
-                .catch((err) => {
-                    console.error(err);
-                    showToastError('認証エラー: ' + err.message);
-                });
-        });
-    };
-
-    return (
-        <div className="flex h-screen font-sans antialiased bg-gray-200">
-            <Sidebar />
-            <div className="flex-1 flex flex-col items-center justify-center p-10">
-                {/* 确认框 */}
-                <Dialog
-                    open={confirmOpen}
-                    onClose={() => setConfirmOpen(false)}
-                    maxWidth="md"
-                    fullWidth
+              <div className="flex items-center gap-3">
+                <span
+                  className={[
+                    'rounded-full px-4 py-2 text-sm font-semibold',
+                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
+                  ].join(' ')}
                 >
-                    <DialogTitle style={{ fontSize: '1.5rem' }}>確認</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText
-                            dangerouslySetInnerHTML={{ __html: confirmMessage }}
-                            style={{ fontSize: '1.25rem' }}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => setConfirmOpen(false)}
-                            style={{ backgroundColor: 'red', color: 'white', fontSize: '1.25rem' }}
-                        >
-                            NO
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                confirmCallback();
-                                setConfirmOpen(false);
-                            }}
-                            style={{ backgroundColor: 'blue', color: 'white', fontSize: '1.25rem' }}
-                        >
-                            YES
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                  {videoStarted ? 'ON' : 'OFF'}
+                </span>
 
-                {/* 视频预览 */}
-                <video
-                    ref={videoRef}
-                    width="640"
-                    height="480"
-                    autoPlay
-                    playsInline
-                    className="rounded-lg shadow-lg mb-4"
-                ></video>
+                {!videoStarted ? (
+                  <button
+                    onClick={startVideo}
+                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  >
+                    Start
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopVideo}
+                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
+                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  >
+                    Stop
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
 
-                {/* 启动摄像头按钮 */}
-                {!videoStarted && (
-                    <button
+          <main
+            className="overflow-auto px-6 py-6"
+            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
+          >
+            <div className="grid grid-cols-[2.35fr_1fr] gap-6">
+              {/* 左：视频（未启动时在视频区域内提示并提供大按钮） */}
+              <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
+                  <div className="aspect-video w-full">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  {!videoStarted && (
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
+                      <button
                         onClick={startVideo}
-                        className="mt-4 px-6 py-3 bg-green-500 text-white font-semibold text-xl rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
-                    >
-                        Start Video
-                    </button>
-                )}
-
-                {/* 如果视频已启动，显示 注册按钮 + 验证按钮 */}
-                {videoStarted && (
-                    <div className="flex space-x-4">
-                        {/* 注册按钮 */}
-                        <button
-                            onClick={capture}
-                            disabled={isRegistering}
-                            className={registerBtnClass}
-                        >
-                            {registerBtnText}
-                        </button>
-
-                        {/* 验证人脸按钮: 渐变色 */}
-                        <button
-                            onClick={verifyFace}
-                            className="mt-4 px-6 py-3 text-white font-semibold text-xl rounded-lg shadow-md
-                                       bg-gradient-to-r from-purple-500 via-pink-500 to-red-500
-                                       hover:from-purple-600 hover:via-pink-600 hover:to-red-600
-                                       transition-all duration-300"
-                        >
-                            顔認証
-                        </button>
+                        className="h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                      >
+                        Start Camera
+                      </button>
                     </div>
-                )}
-
-                {/* 输入框: employeeNumber / employeeName */}
-                <div className="mt-4 flex space-x-4">
-                    <input
-                        type="text"
-                        value={employeeNumber}
-                        onChange={handleEmployeeNumberChange}
-                        placeholder="社員番号"
-                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                        type="text"
-                        value={employeeName}
-                        onChange={(e) => setEmployeeName(e.target.value)}
-                        placeholder="社員名"
-                        className="px-4 py-2 border text-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  )}
                 </div>
 
-                {/* 显示提示 / 状态信息 */}
-                <div className="mt-4 text-lg font-semibold text-green-500">{message}</div>
-                <div className="mt-4 text-sm font-semibold text-gray-500">{status}</div>
-            </div>
+                {status && (
+                  <div className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-black/5">
+                    <p className="text-base font-semibold text-slate-700">{status}</p>
+                  </div>
+                )}
+              </section>
 
-            {/* toast 容器 */}
-            <ToastContainer />
+              {/* 右：员工号 + 自动姓名（不可修改） + 按钮 */}
+              <aside className="flex flex-col gap-6">
+                <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                  <div className="space-y-5">
+                    <input
+                      type="text"
+                      value={employeeNumber}
+                      onChange={handleEmployeeNumberChange}
+                      placeholder="社員番号"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg text-slate-900
+                                 placeholder:text-slate-400 shadow-sm outline-none
+                                 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                    />
+
+                    {/* 不可修改：readOnly + 更像系统填充 */}
+                    <input
+                      type="text"
+                      value={employeeName}
+                      readOnly
+                      placeholder="社員名（自動入力）"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-lg text-slate-900
+                                 placeholder:text-slate-400 shadow-sm outline-none
+                                 ring-1 ring-black/5"
+                    />
+
+                    {message && (
+                      <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200/60">
+                        <p className="text-base font-semibold text-emerald-900">{message}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                  <div className="grid grid-cols-1 gap-4">
+                    <button
+                      onClick={capture}
+                      disabled={!canRegister}
+                      className={[
+                        'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
+                        canRegister ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed',
+                      ].join(' ')}
+                    >
+                      {isRegistering ? '登録中...' : '登録'}
+                    </button>
+
+                    <button
+                      onClick={verifyFace}
+                      disabled={!canOperate}
+                      className={[
+                        'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2',
+                        canOperate
+                          ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-rose-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-rose-700'
+                          : 'bg-slate-300 cursor-not-allowed',
+                      ].join(' ')}
+                    >
+                      認証
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </main>
+
+          <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="md" fullWidth>
+            <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>確認</DialogTitle>
+            <DialogContent>
+              <DialogContentText
+                dangerouslySetInnerHTML={{ __html: confirmMessage }}
+                style={{ fontSize: '1.1rem', lineHeight: 1.8 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setConfirmOpen(false)}
+                variant="contained"
+                style={{ backgroundColor: '#ef4444', color: 'white', fontSize: '1.05rem' }}
+              >
+                NO
+              </Button>
+              <Button
+                onClick={() => {
+                  confirmCallback();
+                  setConfirmOpen(false);
+                }}
+                variant="contained"
+                style={{ backgroundColor: '#2563eb', color: 'white', fontSize: '1.05rem' }}
+              >
+                YES
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <ToastContainer />
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default Capture;

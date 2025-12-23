@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'; // 引入 GFM 插件
+import remarkGfm from 'remark-gfm';
 import Sidebar from './Sidebar';
-import './styles.scss'; // 确保你的全局样式或组件特定样式被引入
 
-// 示例：把多个功能说明存成一个对象
-// 保持你的 manuals 对象不变
+const HEADER_H = 84;
+
+// manuals 保持不变（你原来的对象 그대로）
 const manuals = {
-    home: `
+  home: `
 # ホームページ
 
 Webアプリを起動した際に表示されるメインページです。
@@ -15,9 +15,8 @@ Webアプリを起動した際に表示されるメインページです。
 現在の時刻や日付、そしてシステムからのお知らせなどが表示されます。
 
 画面下部（または指定の場所）にある **[打刻開始はこちら]** ボタンをタップまたはクリックすると、顔認証による出退勤打刻画面へスムーズに移動できます。
-
-    `,
-    Sidebar: `
+`,
+  Sidebar: `
 # サイドバーナビゲーション
 
 画面左上に配置された **三本線のアイコン** をタップすることで、サイドバーの表示・非表示を切り替えることができます。
@@ -35,10 +34,8 @@ Webアプリを起動した際に表示されるメインページです。
 *   **顔再登録**: 既存の顔データを更新します。
 *   **マニュアル**: 現在ご覧いただいている操作説明です。
 *   **出退勤打刻**: 日々の出勤・退勤を記録します。
-
-
-    `,
-    顔登録: `
+`,
+  顔登録: `
 # 顔登録ガイド
 
 初めて顔認証をご利用になる際に、ご自身の顔情報をシステムに登録するための手順です。
@@ -63,10 +60,8 @@ Webアプリを起動した際に表示されるメインページです。
 登録処理が正常に完了すると、成功メッセージが表示されます。
 
 万が一エラーが発生した場合は、メッセージに従い再度お試しいただくか、システム管理者にご連絡ください。
-
-
-    `,
-    顔再登録: `
+`,
+  顔再登録: `
 # 顔再登録ガイド
 
 既に登録されているご自身の顔情報を更新（再登録）するための手順です。
@@ -91,7 +86,7 @@ Webアプリを起動した際に表示されるメインページです。
 3.  **撮影ポジションの調整**
     *   [x] カメラに対し**正面**を向き、顔全体が画面中央のガイド内にバランス良く収まるようにしてください。
     *   [x] 明るい場所を選び、顔に影がかからないように注意しましょう。
-    *   [x] 背景に他の人物の顔が映り込まないよう注意してください。
+    *   [x] 背景に他の人物が映り込まないよう注意してください。
 
 4.  **顔情報の再キャプチャと更新**
     *   準備が整いましたら、**[再登録開始]** ボタンをクリックします。
@@ -100,9 +95,8 @@ Webアプリを起動した際に表示されるメインページです。
 再登録処理が正常に完了すると、成功メッセージが表示されます。
 
 万が一エラーが発生した場合は、メッセージに従い再度お試しいただくか、システム管理者にご連絡ください。
-
-    `,
-    顔認証: `
+`,
+  顔認証: `
 # 顔認証の利用方法
 
 この機能では、登録済みの顔情報を使用して本人確認を行います。
@@ -135,9 +129,8 @@ Webアプリを起動した際に表示されるメインページです。
 
 > **ご注意**
 > 認証精度に影響を与える可能性があるため、認証時は帽子やマスク、サングラスなどを外していただくことを推奨します。
-    `,
-    出退勤: `
-
+`,
+  出退勤: `
 # 出退勤打刻
 
 日々の出勤および退勤時刻を記録するための機能です。
@@ -165,92 +158,87 @@ Webアプリを起動した際に表示されるメインページです。
 *   顔認証が成功すると、打刻時刻、社員名などの情報がシステムに記録され、メッセージが表示されます。
 *   既に同じモード（例：出勤）で打刻済みの場合、「すでに打刻されています」といったメッセージが表示されるます。
 *   再度打刻操作を行うと「二重打刻」として扱われ、既存の記録を上書きするかどうかの確認を求められるます。画面の指示に従い、適切にご対応ください。
-
-    `
+`,
 };
 
-
 const Manual: React.FC = () => {
-    const [selected, setSelected] = useState<keyof typeof manuals>('home');
+  const [selected, setSelected] = useState<keyof typeof manuals>('home');
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newVal = e.target.value as keyof typeof manuals;
-        setSelected(newVal);
-    };
+  const options = useMemo(() => Object.keys(manuals) as (keyof typeof manuals)[], []);
 
-    return (
-        <div className="flex h-screen bg-gray-100 font-sans"> {/* 调整背景色和字体 */}
-            <Sidebar />
+  return (
+    <div className="h-dvh overflow-hidden bg-slate-100">
+      <div className="flex h-dvh overflow-hidden">
+        <Sidebar />
 
-            {/* 内容区：在右侧 */}
-            <div className="flex-1 p-6 md:p-10 overflow-y-auto"> {/* 增加响应式内边距，确保垂直滚动 */}
-                
-                {/* 页面标题和选择器容器 */}
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-6">取扱説明書</h1>
-                    <div className="flex items-center">
-                        <label 
-                            htmlFor="manual-select" 
-                            className="text-lg font-semibold text-gray-700 mr-3"
-                        >
-                            マニュアルを選択：
-                        </label>
-                        <select
-                            id="manual-select"
-                            value={selected}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-md p-2 text-base shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
-                        >
-                            {/* 动态生成 options，使代码更简洁 */}
-                            {Object.keys(manuals).map((key) => (
-                                <option key={key} value={key}>
-                                    {/* 将 key 转换为更友好的显示名称，这里简单处理，你可以根据需要自定义 */}
-                                    {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </header>
-
-                {/* Markdown 内容显示区域 */}
-                {/* 
-                    - bg-white: 白色背景
-                    - shadow-xl: 更大的阴影效果，使其突出
-                    - rounded-lg: 更大的圆角
-                    - p-6 md:p-8: 内边距，中等屏幕以上更大
-                    - prose: Tailwind Typography 基础类
-                    - prose-sm sm:prose lg:prose-lg xl:prose-xl: 响应式排版大小调整
-                        - 默认 prose (适用于中等屏幕)
-                        - prose-sm (小屏幕)
-                        - prose-lg (大屏幕)
-                        - prose-xl (超大屏幕)
-                    - max-w-none sm:max-w-3xl: 
-                        - 默认情况下，prose 会有一个最大宽度。这里先用 max-w-none 取消它。
-                        - 然后在 sm (640px) 及以上屏幕，设置最大宽度为 3xl (768px)，更适合阅读长文本。你可以调整这个值。
-                    - mx-auto: 水平居中内容
-                    - prose-headings:..., prose-a:... 等可以用来定制 prose 内部元素的默认样式
-                    - leading-relaxed: 增加行高，提高可读性
-                */}
-                <article 
-                    className="bg-white shadow-xl rounded-lg p-6 md:p-8 
-                               prose prose-base sm:prose-lg 
-                               max-w-full sm:max-w-3xl mx-auto 
-                               prose-headings:font-semibold prose-headings:text-gray-800 
-                               prose-h1:text-2xl prose-h1:mb-4 prose-h1:border-b prose-h1:pb-2
-                               prose-h2:text-xl prose-h2:mb-3 prose-h2:border-b prose-h2:pb-1
-                               prose-a:text-indigo-600 hover:prose-a:text-indigo-700 hover:prose-a:underline
-                               prose-ul:list-disc prose-ul:pl-5
-                               prose-ol:list-decimal prose-ol:pl-5
-                               prose-table:border prose-th:p-2 prose-th:border prose-td:p-2 prose-td:border 
-                               leading-relaxed text-gray-700" // 为普通文本设置颜色
-                >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {manuals[selected]}
-                    </ReactMarkdown>
-                </article>
+        <div className="flex-1 overflow-hidden">
+          {/* 极简 header（左侧留汉堡按钮位） */}
+          <header
+            className="border-b border-black/5 bg-white/80 backdrop-blur"
+            style={{ height: HEADER_H }}
+          >
+            <div className="flex h-full items-center justify-between px-6">
+              <div className="w-16 shrink-0" aria-hidden="true" />
+              <div />
             </div>
+          </header>
+
+          {/* main 负责滚动（防溢出） */}
+          <main
+            className="overflow-auto px-6 py-6"
+            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
+          >
+            <div className="grid grid-cols-[360px_1fr] gap-6">
+              {/* 左：选择器（做大、好点） */}
+              <aside className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <select
+                  value={selected}
+                  onChange={(e) => setSelected(e.target.value as keyof typeof manuals)}
+                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-semibold text-slate-900
+                             shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                >
+                  {options.map((key) => (
+                    <option key={String(key)} value={key}>
+                      {String(key)}
+                    </option>
+                  ))}
+                </select>
+
+                {/* 极少量提示文字（想更极简可删掉） */}
+                <p className="mt-4 text-sm font-semibold text-slate-500">
+                  画面左上のボタンでメニューを開けます
+                </p>
+              </aside>
+
+              {/* 右：Markdown 内容（现代卡片 + typography） */}
+              <article
+                className={[
+                  'rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-black/5',
+                  'prose prose-slate max-w-none',
+                  // iPad 横屏：字号更大、更易读
+                  'prose-base lg:prose-lg',
+                  'prose-headings:tracking-tight prose-headings:font-extrabold',
+                  'prose-h1:border-b prose-h1:pb-3 prose-h1:border-slate-200',
+                  'prose-h2:border-b prose-h2:pb-2 prose-h2:border-slate-200',
+                  'prose-a:text-blue-600 hover:prose-a:text-blue-700',
+                  'prose-strong:text-slate-900',
+                  'prose-li:my-1',
+                  'prose-table:table-auto',
+                  'prose-th:bg-slate-50',
+                  'prose-th:font-bold',
+                  'prose-th:border prose-td:border prose-th:border-slate-200 prose-td:border-slate-200',
+                  'prose-th:p-2 prose-td:p-2',
+                  'leading-relaxed',
+                ].join(' ')}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{manuals[selected]}</ReactMarkdown>
+              </article>
+            </div>
+          </main>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default Manual;
