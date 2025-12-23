@@ -7,6 +7,7 @@ import Verify from './Verify';
 import Liveness from './Liveness';
 import Attendance from './Attendance';
 import Manual from './Manual';
+import MobileAttendance from "./MobileAttendance";
 import './App.css';
 
 const App: React.FC = () => {
@@ -20,6 +21,7 @@ const App: React.FC = () => {
                 <Route path="/liveness" element={<Liveness />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/manual" element={<Manual/>}/>
+                <Route path="/mobile_attendance" element={<MobileAttendance />} />
             </Routes>
         </Router>
     );
