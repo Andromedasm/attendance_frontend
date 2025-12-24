@@ -20,19 +20,18 @@ const Attendance: React.FC = () => {
   // 1=出勤, 2=退勤
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
 
-  // ✅ 主按钮默认文案：打刻開始（未开摄像头时禁用）
+  // 主按钮：默认“打刻開始”
   const [buttonText, setButtonText] = useState<string>('打刻開始');
   const [isPunching, setIsPunching] = useState<boolean>(false);
 
-  // 摄像头是否已开启
   const [videoStarted, setVideoStarted] = useState(false);
 
-  // 二重打刻覆盖用 Dialog
+  // 二重打刻
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
 
-  // 打刻结果（保留）
+  // ✅ 最近一次打刻信息
   const [attendanceDetails, setAttendanceDetails] = useState({
     employee_number: '',
     employee_name: '',
@@ -40,10 +39,7 @@ const Attendance: React.FC = () => {
     status: '',
   });
 
-  // 手动覆盖自动判断
   const [manualOverride, setManualOverride] = useState<boolean>(false);
-
-  // Idle
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
   // 自動判断：出勤/退勤
@@ -69,7 +65,7 @@ const Attendance: React.FC = () => {
     return () => clearInterval(idleCheckInterval);
   }, [videoStarted, lastActivityTime, navigate]);
 
-  // C) visibilitychange / pagehide => stop camera
+  // visibilitychange / pagehide => stop camera
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) stopVideo();
@@ -111,7 +107,7 @@ const Attendance: React.FC = () => {
     }
     setVideoStarted(false);
     setIsPunching(false);
-    setButtonText('打刻開始'); // 摄像头关掉也维持此文案（按钮会禁用）
+    setButtonText('打刻開始');
   };
 
   function wait(ms: number) {
@@ -167,7 +163,7 @@ const Attendance: React.FC = () => {
           videoRef.current.play().catch(() => {});
         }
         setVideoStarted(true);
-        restartCountRef.current = 0; // ✅ 重启计数清零
+        restartCountRef.current = 0;
         setButtonText('打刻開始');
       })
       .catch((error) => {
@@ -177,7 +173,6 @@ const Attendance: React.FC = () => {
       });
   };
 
-  // D) currentTime 卡死检测 + 节流重启（safe）
   const safeRestartCamera = async (reason: string) => {
     if (!videoStarted) return;
 
@@ -216,7 +211,6 @@ const Attendance: React.FC = () => {
         lastVideoTimeRef.current = t;
       }
 
-      // 连续 3 次（约 30 秒）不变 => 重启
       if (stuckTicksRef.current >= 3) {
         stuckTicksRef.current = 0;
         safeRestartCamera('currentTime_stuck');
@@ -227,7 +221,6 @@ const Attendance: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoStarted]);
 
-  // 打刻
   const startAttendance = async () => {
     try {
       resetInactivityTimer();
@@ -250,7 +243,6 @@ const Attendance: React.FC = () => {
       const video = videoRef.current!;
       const deviceTime = new Date().toISOString();
 
-      // 多帧里取中间帧，后端只吃 image
       const frames = await captureFrames(video, 1200, 120, 640, 0.8);
       const bestFrame = frames[Math.floor(frames.length / 2)];
 
@@ -301,6 +293,12 @@ const Attendance: React.FC = () => {
                 toast.error(data2.error, { autoClose: 5000 });
               } else {
                 playSuccessSound();
+                setAttendanceDetails({
+                  employee_number: data2.employee_number || '',
+                  employee_name: data2.employee_name || '',
+                  attendance_time: data2.attendance_time || '',
+                  status: selectedStatus === 1 ? '出勤' : '退勤',
+                });
                 toast.success(
                   <div
                     dangerouslySetInnerHTML={{
@@ -357,7 +355,6 @@ const Attendance: React.FC = () => {
     }
   };
 
-  // 手动选择（5分钟不自动判断）
   const handleStatusClick = (status: number) => {
     resetInactivityTimer();
     setSelectedStatus(status);
@@ -365,7 +362,6 @@ const Attendance: React.FC = () => {
     setTimeout(() => setManualOverride(false), 300_000);
   };
 
-  // 更大按钮
   const statusBtnBase =
     'h-28 rounded-[36px] text-4xl font-extrabold text-white shadow-sm transition-transform ' +
     'active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2';
@@ -382,11 +378,9 @@ const Attendance: React.FC = () => {
         <Sidebar />
 
         <div className="flex-1 overflow-hidden">
-          {/* Header：OFF 仅显示；ON => Stop */}
           <header className="border-b border-black/5 bg-white/80 backdrop-blur" style={{ height: HEADER_H }}>
             <div className="flex h-full items-center justify-between px-6">
               <div className="w-16 shrink-0" aria-hidden="true" />
-
               <div className="flex items-center gap-3">
                 {!videoStarted ? (
                   <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
@@ -438,7 +432,6 @@ const Attendance: React.FC = () => {
             </Dialog>
 
             <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：视频；未启动时遮罩提示 + Start Camera */}
               <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
                   <div className="aspect-video w-full">
@@ -464,7 +457,6 @@ const Attendance: React.FC = () => {
                 </div>
               </section>
 
-              {/* 右：出勤/退勤/打刻 */}
               <aside className="flex flex-col gap-6">
                 <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <div className="grid grid-cols-1 gap-6">
@@ -512,6 +504,19 @@ const Attendance: React.FC = () => {
                     </button>
                   </div>
                 </section>
+
+                {/* ✅ 最近打刻信息卡片 */}
+                {attendanceDetails.employee_number && (
+                  <section className="rounded-[28px] bg-white p-4 shadow-sm ring-1 ring-black/5">
+                    <p className="text-sm font-semibold text-slate-700">直近の打刻</p>
+                    <div className="mt-2 text-sm text-slate-600 space-y-1">
+                      <p>社員番号: {attendanceDetails.employee_number}</p>
+                      <p>社員名: {attendanceDetails.employee_name}</p>
+                      <p>打刻時間: {attendanceDetails.attendance_time}</p>
+                      <p>種類: {attendanceDetails.status}</p>
+                    </div>
+                  </section>
+                )}
               </aside>
             </div>
 

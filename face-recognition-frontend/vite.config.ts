@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -17,7 +16,7 @@ export default defineConfig({
         target: 'http://172.29.122.103:8000', // Flask 后端地址
         changeOrigin: true, // 修改请求头中的 `Origin`
         secure: false, // 如果是自签名证书需要设为 false
-	xfwd: true, // 传递 X-Forwarded-* 头部信息（真实客户端 IP）
+        xfwd: true, // 传递 X-Forwarded-* 头部信息（真实客户端 IP）
       },
     },
   },
