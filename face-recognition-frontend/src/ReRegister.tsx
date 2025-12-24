@@ -20,6 +20,7 @@ const ReRegister: React.FC = () => {
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [employeeName, setEmployeeName] = useState('');
 
+  // status：用于“取得した社員名/見つかりません/アップロード中...”
   const [status, setStatus] = useState('');
   const [videoStarted, setVideoStarted] = useState(false);
 
@@ -30,7 +31,6 @@ const ReRegister: React.FC = () => {
   const [dialogMode, setDialogMode] = useState<
     'confirm' | 'lowSimilarityRequest' | 'lowSimilarityConfirm' | ''
   >('');
-  const [logId, setLogId] = useState<number | null>(null); // kept (unused in current flow)
   const [currentSimilarityScore, setCurrentSimilarityScore] = useState<number | null>(null);
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -128,7 +128,7 @@ const ReRegister: React.FC = () => {
         setLastAuthTime(Date.now());
         closePasswordDialog();
         showToastInfo('パスワード認証成功');
-        reRegister(); // initial call
+        reRegister();
       })
       .catch((err) => {
         showToastError('パスワードが違います: ' + err.message);
@@ -137,10 +137,9 @@ const ReRegister: React.FC = () => {
 
   const resetReRegisterState = () => {
     setIsReRegistering(false);
-    // status is kept (backend message / name lookup message)
+    // status 保留
   };
 
-  // main re-register
   const reRegister = (forceOverrideLowSimilarity = false, isLegacyOverride = false) => {
     if (!employeeNumber.trim() || !employeeName.trim()) {
       showToastError('社員番号と名前を記入してください');
@@ -184,6 +183,7 @@ const ReRegister: React.FC = () => {
           return res.json();
         })
         .then((data) => {
+          // 仍然把后端 message 写到 status（但显示位置在输入框下方）
           setStatus(data.message || '');
 
           if (data.error) {
@@ -221,14 +221,11 @@ const ReRegister: React.FC = () => {
           setStatus('');
           showToastError('再登録エラー: ' + error.message);
         })
-        .finally(() => {
-          resetReRegisterState();
-        });
+        .finally(() => resetReRegisterState());
     }, 'image/jpeg', 0.9);
   };
 
   const checkPasswordAndReRegister = () => {
-    // 15 分以内は再認証不要
     if (lastAuthTime && Date.now() - lastAuthTime < 15 * 60 * 1000) {
       reRegister();
     } else {
@@ -236,7 +233,6 @@ const ReRegister: React.FC = () => {
     }
   };
 
-  // legacy override dialog
   const handleYesLegacy = () => {
     setDialogOpen(false);
     reRegister(false, true);
@@ -246,7 +242,6 @@ const ReRegister: React.FC = () => {
     showToastInfo('キャンセルしました');
   };
 
-  // low similarity confirm dialog
   const handleForceProceedLowSimilarity = () => {
     setDialogOpen(false);
     reRegister(true, false);
@@ -324,37 +319,22 @@ const ReRegister: React.FC = () => {
         <Sidebar />
 
         <div className="flex-1 overflow-hidden">
-          {/* 极简 header：左侧留汉堡按钮位，右侧只放 ON/OFF + Start/Stop */}
-          <header
-            className="border-b border-black/5 bg-white/80 backdrop-blur"
-            style={{ height: HEADER_H }}
-          >
+          {/* header：与 Capture 一致：OFF 仅显示；ON 变成可点 Stop */}
+          <header className="border-b border-black/5 bg-white/80 backdrop-blur" style={{ height: HEADER_H }}>
             <div className="flex h-full items-center justify-between px-6">
               <div className="w-16 shrink-0" aria-hidden="true" />
-
               <div className="flex items-center gap-3">
-                <span
-                  className={[
-                    'rounded-full px-4 py-2 text-sm font-semibold',
-                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
-                  ].join(' ')}
-                >
-                  {videoStarted ? 'ON' : 'OFF'}
-                </span>
-
                 {!videoStarted ? (
-                  <button
-                    onClick={startVideo}
-                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                  >
-                    Start
-                  </button>
+                  <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                    OFF
+                  </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={stopVideo}
-                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
-                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    className="h-11 rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white shadow-sm
+                               hover:bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    aria-label="Stop camera"
                   >
                     Stop
                   </button>
@@ -363,57 +343,57 @@ const ReRegister: React.FC = () => {
             </div>
           </header>
 
-          <main
-            className="overflow-auto px-6 py-6"
-            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
-          >
+          <main className="overflow-auto px-6 py-6" style={{ height: `calc(100dvh - ${HEADER_H}px)` }}>
             <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：视频（未启动时：区域内大按钮） */}
+              {/* 左：视频遮罩（与 Capture 一致的文案 + Start Camara） */}
               <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
                   <div className="aspect-video w-full">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="h-full w-full object-cover"
-                    />
+                    <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
                   </div>
 
                   {!videoStarted && (
-                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
-                      <button
-                        onClick={startVideo}
-                        className="h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
-                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        Start Camera
-                      </button>
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm p-8">
+                      <div className="text-center">
+                        <p className="text-lg font-extrabold text-slate-900">
+                          下のボタンを押してカメラを起動してください
+                        </p>
+
+                        <button
+                          onClick={startVideo}
+                          className="mt-5 h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
+                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          Start Camara
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {status && (
-                  <div className="mt-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-black/5">
-                    <p className="text-base font-semibold text-slate-700">{status}</p>
-                  </div>
-                )}
               </section>
 
-              {/* 右：员工号 + 自动姓名（只读）+ 两个大按钮 */}
+              {/* 右：输入框 + 状态提示在输入框下方（同 Capture 颜色/样式） */}
               <aside className="flex flex-col gap-6">
                 <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <div className="space-y-5">
-                    <input
-                      type="text"
-                      value={employeeNumber}
-                      onChange={handleEmployeeNumberChange}
-                      placeholder="社員番号"
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg text-slate-900
-                                 placeholder:text-slate-400 shadow-sm outline-none
-                                 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={employeeNumber}
+                        onChange={handleEmployeeNumberChange}
+                        placeholder="社員番号"
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg text-slate-900
+                                   placeholder:text-slate-400 shadow-sm outline-none
+                                   focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                      />
+
+                      {/* ✅ 状态信息移到输入框下方，且用同样样式 */}
+                      {status && (
+                        <div className="mt-4 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200/60">
+                          <p className="text-base font-semibold text-emerald-900">{status}</p>
+                        </div>
+                      )}
+                    </div>
 
                     <input
                       type="text"
@@ -435,9 +415,7 @@ const ReRegister: React.FC = () => {
                       className={[
                         'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
                         'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
-                        canReRegister
-                          ? 'bg-blue-600 hover:bg-blue-700'
-                          : 'bg-slate-300 cursor-not-allowed',
+                        canReRegister ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed',
                       ].join(' ')}
                     >
                       {isReRegistering ? '再登録中...' : '再登録'}
@@ -464,9 +442,7 @@ const ReRegister: React.FC = () => {
 
           {/* 管理者パスワード */}
           <Dialog open={passwordDialogOpen} onClose={closePasswordDialog}>
-            <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>
-              管理者パスワード
-            </DialogTitle>
+            <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>管理者パスワード</DialogTitle>
             <DialogContent>
               <DialogContentText style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
                 顔再登録を行うには管理者パスワードを入力してください
@@ -507,7 +483,6 @@ const ReRegister: React.FC = () => {
                 style={{ fontSize: '1.1rem', lineHeight: 1.8 }}
                 dangerouslySetInnerHTML={{ __html: dialogContent }}
               />
-              {/* debug / optional: show similarity */}
               {dialogMode === 'lowSimilarityConfirm' && currentSimilarityScore !== null && (
                 <p style={{ marginTop: 12, fontSize: '1rem', color: '#334155' }}>
                   類似度: {currentSimilarityScore.toFixed(2)}

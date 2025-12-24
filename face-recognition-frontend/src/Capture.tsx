@@ -240,32 +240,21 @@ const Capture: React.FC = () => {
             style={{ height: HEADER_H }}
           >
             <div className="flex h-full items-center justify-between px-6">
-              {/* 给 Sidebar 左上角汉堡按钮留空 */}
               <div className="w-16 shrink-0" aria-hidden="true" />
 
               <div className="flex items-center gap-3">
-                <span
-                  className={[
-                    'rounded-full px-4 py-2 text-sm font-semibold',
-                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
-                  ].join(' ')}
-                >
-                  {videoStarted ? 'ON' : 'OFF'}
-                </span>
-
+                {/* OFF：只显示状态；ON：显示可点击 Stop（按你要求） */}
                 {!videoStarted ? (
-                  <button
-                    onClick={startVideo}
-                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                  >
-                    Start
-                  </button>
+                  <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                    OFF
+                  </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={stopVideo}
-                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
-                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    className="h-11 rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white shadow-sm
+                               hover:bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    aria-label="Stop camera"
                   >
                     Stop
                   </button>
@@ -279,7 +268,6 @@ const Capture: React.FC = () => {
             style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
           >
             <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：视频（未启动时在视频区域内提示并提供大按钮） */}
               <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
                   <div className="aspect-video w-full">
@@ -293,14 +281,20 @@ const Capture: React.FC = () => {
                   </div>
 
                   {!videoStarted && (
-                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
-                      <button
-                        onClick={startVideo}
-                        className="h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
-                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        Start Camera
-                      </button>
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm p-8">
+                      <div className="text-center">
+                        <p className="text-lg font-extrabold text-slate-900">
+                          下のボタンを押してカメラを起動してください
+                        </p>
+
+                        <button
+                          onClick={startVideo}
+                          className="mt-5 h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
+                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          Start Camara
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -312,7 +306,6 @@ const Capture: React.FC = () => {
                 )}
               </section>
 
-              {/* 右：员工号 + 自动姓名（不可修改） + 按钮 */}
               <aside className="flex flex-col gap-6">
                 <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <div className="space-y-5">
@@ -326,7 +319,6 @@ const Capture: React.FC = () => {
                                  focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
                     />
 
-                    {/* 不可修改：readOnly + 更像系统填充 */}
                     <input
                       type="text"
                       value={employeeName}

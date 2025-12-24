@@ -11,11 +11,17 @@ const Attendance: React.FC = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // ===== Camera guard refs (Safari/iPad) =====
+  const lastRestartAtRef = useRef<number>(0);
+  const restartCountRef = useRef<number>(0);
+  const lastVideoTimeRef = useRef<number>(-1);
+  const stuckTicksRef = useRef<number>(0);
+
   // 1=出勤, 2=退勤
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
 
-  // 主按钮文字：统一 Start Camera（按你要求拼写）
-  const [buttonText, setButtonText] = useState<string>('Start Camera');
+  // ✅ 主按钮默认文案：打刻開始（未开摄像头时禁用）
+  const [buttonText, setButtonText] = useState<string>('打刻開始');
   const [isPunching, setIsPunching] = useState<boolean>(false);
 
   // 摄像头是否已开启
@@ -34,13 +40,13 @@ const Attendance: React.FC = () => {
     status: '',
   });
 
-  // 防止自动判断出勤/退勤的手动覆盖
+  // 手动覆盖自动判断
   const [manualOverride, setManualOverride] = useState<boolean>(false);
 
   // Idle
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
-  // ===== 自动判断出勤/退勤（保留）=====
+  // 自動判断：出勤/退勤
   useEffect(() => {
     const checkStatus = () => {
       if (manualOverride) return;
@@ -53,7 +59,7 @@ const Attendance: React.FC = () => {
     return () => clearInterval(interval);
   }, [manualOverride]);
 
-  // ===== Idle 检查（保留）=====
+  // Idle: 15分=>カメラOFF / 60分=>HOME
   useEffect(() => {
     const idleCheckInterval = setInterval(() => {
       const diff = Date.now() - lastActivityTime;
@@ -63,20 +69,22 @@ const Attendance: React.FC = () => {
     return () => clearInterval(idleCheckInterval);
   }, [videoStarted, lastActivityTime, navigate]);
 
-  // ===== 画面卡住检测（保留）=====
+  // C) visibilitychange / pagehide => stop camera
   useEffect(() => {
-    const freezeCheckInterval = setInterval(() => {
-      if (videoRef.current && videoStarted) {
-        const v = videoRef.current;
-        const isFrozen = !(v.readyState >= 2 && !v.paused && !v.ended);
-        if (isFrozen) {
-          stopVideo();
-          startVideo();
-        }
-      }
-    }, 60_000);
-    return () => clearInterval(freezeCheckInterval);
-  }, [videoStarted]);
+    const onVisibility = () => {
+      if (document.hidden) stopVideo();
+    };
+    const onPageHide = () => stopVideo();
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetInactivityTimer = () => setLastActivityTime(Date.now());
 
@@ -103,7 +111,7 @@ const Attendance: React.FC = () => {
     }
     setVideoStarted(false);
     setIsPunching(false);
-    setButtonText('Start Camera');
+    setButtonText('打刻開始'); // 摄像头关掉也维持此文案（按钮会禁用）
   };
 
   function wait(ms: number) {
@@ -119,10 +127,9 @@ const Attendance: React.FC = () => {
   ): Promise<Blob[]> {
     const frames: Blob[] = [];
     const vw = video.videoWidth || 640;
-    const vh = video.videoHeight || 480;
     const scale = targetWidth ? targetWidth / vw : 1;
     const cw = Math.round(vw * scale);
-    const ch = Math.round(vh * scale);
+    const ch = Math.round((video.videoHeight || 480) * scale);
 
     const canvas = document.createElement('canvas');
     canvas.width = cw;
@@ -147,7 +154,6 @@ const Attendance: React.FC = () => {
     return frames;
   }
 
-  // ===== 启动摄像头：右上角按钮 + 视频遮罩按钮都会调用 =====
   const startVideo = () => {
     resetInactivityTimer();
     navigator.mediaDevices
@@ -161,6 +167,7 @@ const Attendance: React.FC = () => {
           videoRef.current.play().catch(() => {});
         }
         setVideoStarted(true);
+        restartCountRef.current = 0; // ✅ 重启计数清零
         setButtonText('打刻開始');
       })
       .catch((error) => {
@@ -170,7 +177,57 @@ const Attendance: React.FC = () => {
       });
   };
 
-  // ===== 打刻：修复 422 => 只上传一个 image 字段 =====
+  // D) currentTime 卡死检测 + 节流重启（safe）
+  const safeRestartCamera = async (reason: string) => {
+    if (!videoStarted) return;
+
+    const now = Date.now();
+    if (now - lastRestartAtRef.current < 60_000) return; // 60s 节流
+    lastRestartAtRef.current = now;
+
+    restartCountRef.current += 1;
+    console.warn(`[camera] restart (${restartCountRef.current}) reason=${reason}`);
+
+    stopVideo();
+    await new Promise((r) => setTimeout(r, 300));
+    startVideo();
+
+    if (restartCountRef.current >= 3) {
+      toast.error('カメラが不安定です。再起動してください。', { autoClose: 4000 });
+      navigate('/');
+    }
+  };
+
+  useEffect(() => {
+    if (!videoStarted) return;
+
+    lastVideoTimeRef.current = -1;
+    stuckTicksRef.current = 0;
+
+    const timer = setInterval(() => {
+      const v = videoRef.current;
+      if (!v || !v.srcObject) return;
+
+      const t = v.currentTime;
+      if (t === lastVideoTimeRef.current) {
+        stuckTicksRef.current += 1;
+      } else {
+        stuckTicksRef.current = 0;
+        lastVideoTimeRef.current = t;
+      }
+
+      // 连续 3 次（约 30 秒）不变 => 重启
+      if (stuckTicksRef.current >= 3) {
+        stuckTicksRef.current = 0;
+        safeRestartCamera('currentTime_stuck');
+      }
+    }, 10_000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoStarted]);
+
+  // 打刻
   const startAttendance = async () => {
     try {
       resetInactivityTimer();
@@ -193,7 +250,7 @@ const Attendance: React.FC = () => {
       const video = videoRef.current!;
       const deviceTime = new Date().toISOString();
 
-      // 抓多帧，但最终上传一张（中间帧）以匹配后端 image: File(...)
+      // 多帧里取中间帧，后端只吃 image
       const frames = await captureFrames(video, 1200, 120, 640, 0.8);
       const bestFrame = frames[Math.floor(frames.length / 2)];
 
@@ -202,15 +259,13 @@ const Attendance: React.FC = () => {
         fd.append('device_time_str', deviceTime);
         fd.append('status', selectedStatus.toString());
         if (withOverride) fd.append('override', 'true');
-        fd.append('image', bestFrame, 'frame.jpg'); // ✅ 后端要求 image
+        fd.append('image', bestFrame, 'frame.jpg');
         return fd;
       };
 
       const sendOnce = async (formData: FormData) => {
         const res = await fetch('/api/record_attendance', { method: 'POST', body: formData });
-
         if (!res.ok) {
-          // 统一解析 FastAPI 的 detail
           let body: any = null;
           try {
             body = await res.json();
@@ -224,7 +279,6 @@ const Attendance: React.FC = () => {
             `打刻に失敗しました(HTTP ${res.status})`;
           throw new Error(msg);
         }
-
         return res.json();
       };
 
@@ -299,11 +353,11 @@ const Attendance: React.FC = () => {
       toast.error(`打刻に失敗しました: ${err?.message || String(err)}`, { autoClose: 5000 });
     } finally {
       setIsPunching(false);
-      setButtonText(videoStarted ? '打刻開始' : 'Start Camera');
+      setButtonText('打刻開始');
     }
   };
 
-  // 用户手动选择 出勤/退勤（保留：5分钟不自动判断）
+  // 手动选择（5分钟不自动判断）
   const handleStatusClick = (status: number) => {
     resetInactivityTimer();
     setSelectedStatus(status);
@@ -311,14 +365,16 @@ const Attendance: React.FC = () => {
     setTimeout(() => setManualOverride(false), 300_000);
   };
 
-  // 按钮样式（更大更好按）
+  // 更大按钮
   const statusBtnBase =
-    'h-24 rounded-[32px] text-3xl font-extrabold text-white shadow-sm transition-transform ' +
+    'h-28 rounded-[36px] text-4xl font-extrabold text-white shadow-sm transition-transform ' +
     'active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2';
 
   const punchBtnBase =
-    'h-24 rounded-full text-4xl font-extrabold text-white shadow-sm transition-transform ' +
+    'h-28 rounded-full text-5xl font-extrabold text-white shadow-sm transition-transform ' +
     'active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2';
+
+  const punchDisabled = !videoStarted || isPunching;
 
   return (
     <div className="h-dvh overflow-hidden bg-slate-100">
@@ -326,34 +382,23 @@ const Attendance: React.FC = () => {
         <Sidebar />
 
         <div className="flex-1 overflow-hidden">
-          {/* Header：右上角 Start/Stop Camera（按你要求） */}
+          {/* Header：OFF 仅显示；ON => Stop */}
           <header className="border-b border-black/5 bg-white/80 backdrop-blur" style={{ height: HEADER_H }}>
             <div className="flex h-full items-center justify-between px-6">
               <div className="w-16 shrink-0" aria-hidden="true" />
 
               <div className="flex items-center gap-3">
-                <span
-                  className={[
-                    'rounded-full px-4 py-2 text-sm font-semibold',
-                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
-                  ].join(' ')}
-                >
-                  {videoStarted ? 'ON' : 'OFF'}
-                </span>
-
                 {!videoStarted ? (
-                  <button
-                    onClick={startVideo}
-                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                  >
-                    Start Camera
-                  </button>
+                  <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                    OFF
+                  </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={stopVideo}
-                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
-                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    className="h-11 rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white shadow-sm
+                               hover:bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    aria-label="Stop camera"
                   >
                     Stop
                   </button>
@@ -363,7 +408,6 @@ const Attendance: React.FC = () => {
           </header>
 
           <main className="overflow-auto px-6 py-6" style={{ height: `calc(100dvh - ${HEADER_H}px)` }}>
-            {/* 二重打刻 Dialog（保留） */}
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="md" fullWidth>
               <DialogTitle style={{ fontSize: '1.3rem', fontWeight: 800 }}>確認</DialogTitle>
               <DialogContent>
@@ -394,7 +438,7 @@ const Attendance: React.FC = () => {
             </Dialog>
 
             <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：大视频；摄像头关闭时把提示显示在视频区域（按你要求） */}
+              {/* 左：视频；未启动时遮罩提示 + Start Camera */}
               <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
                   <div className="aspect-video w-full">
@@ -402,10 +446,11 @@ const Attendance: React.FC = () => {
                   </div>
 
                   {!videoStarted && (
-                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm p-8">
                       <div className="text-center">
-                        <p className="text-2xl font-extrabold text-slate-900">📷 カメラがオフです</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-700">下のボタンで起動してください</p>
+                        <p className="text-lg font-extrabold text-slate-900">
+                          下のボタンを押してカメラを起動してください
+                        </p>
                         <button
                           onClick={startVideo}
                           className="mt-5 h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
@@ -419,10 +464,10 @@ const Attendance: React.FC = () => {
                 </div>
               </section>
 
-              {/* 右：出勤/退勤/打刻（更大更好按，emoji 保留，选中放大+ring 保留） */}
+              {/* 右：出勤/退勤/打刻 */}
               <aside className="flex flex-col gap-6">
                 <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="grid grid-cols-1 gap-5">
+                  <div className="grid grid-cols-1 gap-6">
                     <button
                       className={[
                         statusBtnBase,
@@ -456,17 +501,14 @@ const Attendance: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={videoStarted ? startAttendance : startVideo}
-                      disabled={isPunching}
+                      onClick={startAttendance}
+                      disabled={punchDisabled}
                       className={[
                         punchBtnBase,
-                        isPunching ? 'bg-slate-300 cursor-not-allowed' : '',
-                        videoStarted
-                          ? 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-700'
-                          : 'bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-700',
+                        punchDisabled ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700',
                       ].join(' ')}
                     >
-                      {videoStarted ? buttonText : 'Start Camera'}
+                      {buttonText}
                     </button>
                   </div>
                 </section>

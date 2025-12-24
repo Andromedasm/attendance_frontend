@@ -119,37 +119,23 @@ const Verify: React.FC = () => {
         <Sidebar />
 
         <div className="flex-1 overflow-hidden">
-          {/* 极简 header：留汉堡按钮位 + 右侧 ON/OFF + Start/Stop */}
-          <header
-            className="border-b border-black/5 bg-white/80 backdrop-blur"
-            style={{ height: HEADER_H }}
-          >
+          {/* ✅ header：移除 Start；OFF 仅显示；ON 改为可点 Stop */}
+          <header className="border-b border-black/5 bg-white/80 backdrop-blur" style={{ height: HEADER_H }}>
             <div className="flex h-full items-center justify-between px-6">
               <div className="w-16 shrink-0" aria-hidden="true" />
 
               <div className="flex items-center gap-3">
-                <span
-                  className={[
-                    'rounded-full px-4 py-2 text-sm font-semibold',
-                    videoStarted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600',
-                  ].join(' ')}
-                >
-                  {videoStarted ? 'ON' : 'OFF'}
-                </span>
-
                 {!videoStarted ? (
-                  <button
-                    onClick={startVideo}
-                    className="h-14 rounded-2xl bg-slate-900 px-7 text-lg font-semibold text-white shadow-sm
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                  >
-                    Start
-                  </button>
+                  <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                    OFF
+                  </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={stopVideo}
-                    className="h-14 rounded-2xl bg-slate-200 px-7 text-lg font-semibold text-slate-900
-                               hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    className="h-11 rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white shadow-sm
+                               hover:bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                    aria-label="Stop camera"
                   >
                     Stop
                   </button>
@@ -158,40 +144,36 @@ const Verify: React.FC = () => {
             </div>
           </header>
 
-          {/* main 可滚动（防溢出保险） */}
-          <main
-            className="overflow-auto px-6 py-6"
-            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
-          >
+          <main className="overflow-auto px-6 py-6" style={{ height: `calc(100dvh - ${HEADER_H}px)` }}>
             <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：超大视频（未启动时在区域内提示 Start Camera） */}
+              {/* 左：视频（未启动时遮罩内 Start Camera） */}
               <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                 <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
                   <div className="aspect-video w-full">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="h-full w-full object-cover"
-                    />
+                    <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
                   </div>
 
                   {!videoStarted && (
-                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
-                      <button
-                        onClick={startVideo}
-                        className="h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
-                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        Start Camera
-                      </button>
+                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm p-8">
+                      <div className="text-center">
+                        <p className="text-lg font-extrabold text-slate-900">
+                          下のボタンを押してカメラを起動してください
+                        </p>
+
+                        <button
+                          onClick={startVideo}
+                          className="mt-5 h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
+                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          Start Camera
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               </section>
 
-              {/* 右：一个超大“認証”按钮（极简） */}
+              {/* 右：認証ボタン */}
               <aside className="flex flex-col gap-6">
                 <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <button
@@ -208,10 +190,7 @@ const Verify: React.FC = () => {
                     {verifyText}
                   </button>
 
-                  {/* 可选：想完全无文字可删掉这一行 */}
-                  <p className="mt-4 text-sm font-semibold text-slate-500">
-                    カメラ ON の状態で押してください
-                  </p>
+                  <p className="mt-4 text-sm font-semibold text-slate-500">カメラ ON の状態で押してください</p>
                 </section>
               </aside>
             </div>
