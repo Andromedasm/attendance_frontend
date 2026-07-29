@@ -132,7 +132,8 @@ const MobileAttendance: React.FC = () => {
             }
 
             const formData = new FormData();
-            formData.append('image', blob);
+            // 关键：给文件一个名字，后端 image.filename 才稳定
+            formData.append('image', blob, `mobile_${Date.now()}.jpg`);
             formData.append('status', selectedStatus.toString());
             formData.append('device_time', new Date().toISOString());
             formData.append('lat', latVal.toString());
@@ -180,7 +181,8 @@ const MobileAttendance: React.FC = () => {
     const { blob, latVal, lonVal, status } = overrideData;
 
     const overrideFormData = new FormData();
-    overrideFormData.append('image', blob!);
+    // 关键：同样带文件名
+    overrideFormData.append('image', blob!, `mobile_${Date.now()}.jpg`);
     overrideFormData.append('status', status);
     overrideFormData.append('device_time', new Date().toISOString());
     overrideFormData.append('override', 'true');
