@@ -1,13 +1,67 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-.menu-item:hover {
-  background-color: #4CAF50; /* Green */
-  color: white;
-  transform: scale(1.05);
-  transition: all 0.2s;
+@theme {
+  --font-sans: Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, ui-sans-serif, system-ui, sans-serif;
 }
 
-.selected {
-  box-shadow: 0 0 10px 0 rgba(0, 123, 255, 0.5);
-}
+@layer base {
+  :root {
+    font-family: var(--font-sans);
+    color: #0f172a;
+    background: #e8eef7;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 320px;
+    min-height: 100%;
+    margin: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #e8eef7;
+  }
+
+  html[data-theme='dark'],
+  html[data-theme='dark'] body {
+    background: #07111f;
+  }
+
+  html[data-theme='light'],
+  html[data-theme='light'] body {
+    background: #edf7fb;
+  }
+
+  #root {
+    isolation: isolate;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    color: #f8fafc;
+    background: rgba(79, 70, 229, 0.82);
+  }
+}

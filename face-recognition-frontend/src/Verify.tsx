@@ -1,19 +1,44 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Sidebar from './Sidebar';
+import ThemeBackdrop from './ThemeBackdrop';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from './theme-context';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './styles.scss';
+import './recognition.scss';
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const HEADER_H = 84;
+interface FaceMatch {
+  employee_number: string | number;
+  employee_name: string;
+  similarity?: number;
+}
 
 const Verify: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef(true);
+  const isStartingVideoRef = useRef(false);
+  const verifyInFlightRef = useRef(false);
+  const { theme } = useTheme();
 
   const [videoStarted, setVideoStarted] = useState(false);
+  const [isStartingVideo, setIsStartingVideo] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyText, setVerifyText] = useState('認証');
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      isStartingVideoRef.current = false;
+      verifyInFlightRef.current = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const showError = (msg: string) => toast.error(msg, { autoClose: 5000 });
   const showInfo = (msg: string) =>
@@ -22,55 +47,98 @@ const Verify: React.FC = () => {
     toast.success(<div dangerouslySetInnerHTML={{ __html: msg }} />, { autoClose: 5000 });
 
   const startVideo = () => {
+    if (isStartingVideoRef.current || videoStarted) return;
+
+    isStartingVideoRef.current = true;
+    setIsStartingVideo(true);
+
     navigator.mediaDevices
       .getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: { ideal: 'user' } },
         audio: false,
       })
       .then(async (stream) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          try {
-            await videoRef.current.play();
-          } catch {}
-          setVideoStarted(true);
+        streamRef.current = stream;
+
+        if (!isMountedRef.current || !videoRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
         }
+
+        videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch (error) {
+          console.warn('Video playback will continue through autoplay when available:', error);
+        }
+        setVideoStarted(true);
       })
       .catch((error) => {
+        if (!isMountedRef.current) return;
         console.error(error);
         showError('ビデオを開始できません: ' + error.message);
+      })
+      .finally(() => {
+        isStartingVideoRef.current = false;
+        if (isMountedRef.current) setIsStartingVideo(false);
       });
   };
 
   const stopVideo = () => {
-    const v = videoRef.current;
-    const stream = v?.srcObject as MediaStream | null;
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-    if (v) v.srcObject = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) videoRef.current.srcObject = null;
     setVideoStarted(false);
   };
 
+  const finishVerification = () => {
+    verifyInFlightRef.current = false;
+
+    if (isMountedRef.current) {
+      setIsVerifying(false);
+      setVerifyText('認証');
+    }
+  };
+
   const verify = () => {
+    if (verifyInFlightRef.current) return;
+
     const video = videoRef.current;
     if (!video || !video.srcObject) {
       showError('カメラを起動してください');
+      return;
+    }
+    if (!video.videoWidth || !video.videoHeight) {
+      showError('カメラの準備が完了していません');
       return;
     }
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const context = canvas.getContext('2d');
+    if (!context) {
+      showError('画像を取得できませんでした');
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    verifyInFlightRef.current = true;
+    setIsVerifying(true);
+    setVerifyText('認証中...');
 
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          showError('画像を取得できませんでした');
+          if (isMountedRef.current) showError('画像を取得できませんでした');
+          finishVerification();
           return;
         }
-
-        setIsVerifying(true);
-        setVerifyText('認証中...');
+        if (!isMountedRef.current) {
+          finishVerification();
+          return;
+        }
 
         const formData = new FormData();
         formData.append('image', blob);
@@ -81,13 +149,15 @@ const Verify: React.FC = () => {
             return response.json();
           })
           .then((data) => {
+            if (!isMountedRef.current) return;
+
             if (data.error) {
               showError('認証失敗しました: ' + data.error);
             } else if (data.found_faces && data.found_faces.length > 0) {
               const info = data.found_faces
-                .map((f: any) => {
-                  const similarity = f.similarity ? f.similarity.toFixed(2) : 'N/A';
-                  return `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${similarity}`;
+                .map((face: FaceMatch) => {
+                  const similarity = face.similarity ? face.similarity.toFixed(2) : 'N/A';
+                  return `社員番号: ${face.employee_number}, 名前: ${face.employee_name}, 類似度: ${similarity}`;
                 })
                 .join('<br/>');
               showSuccess(`以下の顔が認証されました:<br/>${info}`);
@@ -98,107 +168,76 @@ const Verify: React.FC = () => {
             }
           })
           .catch((error) => {
+            if (!isMountedRef.current) return;
             console.error(error);
             showError('認証失敗しました: ' + error.message);
           })
-          .finally(() => {
-            setIsVerifying(false);
-            setVerifyText('認証');
-          });
+          .finally(finishVerification);
       },
       'image/jpeg',
       0.9
     );
   };
 
-  const canVerify = videoStarted && !isVerifying;
+  const canVerify = videoStarted && !isVerifying && !isStartingVideo;
 
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100">
-      <div className="flex h-dvh overflow-hidden">
-        <Sidebar />
+    <div className="theme-surface recognition-surface" data-theme={theme}>
+      <Sidebar />
+      <ThemeToggle />
+      <ThemeBackdrop />
 
-        <div className="flex-1 overflow-hidden">
-          {/* ✅ header：移除 Start；OFF 仅显示；ON 改为可点 Stop */}
-          <header className="border-b border-black/5 bg-white/80 backdrop-blur" style={{ height: HEADER_H }}>
-            <div className="flex h-full items-center justify-between px-6">
-              <div className="w-16 shrink-0" aria-hidden="true" />
+      <main className="recognition-main">
+        <section className="recognition-panel">
+          <h1 className="recognition-title">顔認証</h1>
 
-              <div className="flex items-center gap-3">
-                {!videoStarted ? (
-                  <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
-                    OFF
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={stopVideo}
-                    className="h-11 rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white shadow-sm
-                               hover:bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                    aria-label="Stop camera"
-                  >
-                    Stop
-                  </button>
-                )}
-              </div>
+          <div className="recognition-preview-shell recognition-preview-shell--wide">
+            <video
+              ref={videoRef}
+              width="1280"
+              height="720"
+              autoPlay
+              muted
+              playsInline
+              className="recognition-preview"
+            />
+          </div>
+
+          {!videoStarted ? (
+            <div className="recognition-single-action">
+              <button
+                type="button"
+                onClick={startVideo}
+                disabled={isStartingVideo}
+                aria-busy={isStartingVideo}
+                className="recognition-button recognition-button--start"
+              >
+                Start Camera
+              </button>
             </div>
-          </header>
-
-          <main className="overflow-auto px-6 py-6" style={{ height: `calc(100dvh - ${HEADER_H}px)` }}>
-            <div className="grid grid-cols-[2.35fr_1fr] gap-6">
-              {/* 左：视频（未启动时遮罩内 Start Camera） */}
-              <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
-                <div className="relative overflow-hidden rounded-[24px] bg-black ring-1 ring-black/10">
-                  <div className="aspect-video w-full">
-                    <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
-                  </div>
-
-                  {!videoStarted && (
-                    <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm p-8">
-                      <div className="text-center">
-                        <p className="text-lg font-extrabold text-slate-900">
-                          下のボタンを押してカメラを起動してください
-                        </p>
-
-                        <button
-                          onClick={startVideo}
-                          className="mt-5 h-16 rounded-3xl bg-slate-900 px-10 text-2xl font-extrabold text-white shadow
-                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                        >
-                          Start Camera
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* 右：認証ボタン */}
-              <aside className="flex flex-col gap-6">
-                <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <button
-                    onClick={verify}
-                    disabled={!canVerify}
-                    className={[
-                      'h-16 w-full rounded-3xl text-2xl font-extrabold text-white shadow-sm transition',
-                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2',
-                      canVerify
-                        ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-rose-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-rose-700'
-                        : 'bg-slate-300 cursor-not-allowed',
-                    ].join(' ')}
-                  >
-                    {verifyText}
-                  </button>
-
-                  <p className="mt-4 text-sm font-semibold text-slate-500">カメラ ON の状態で押してください</p>
-                </section>
-              </aside>
+          ) : (
+            <div className="recognition-actions">
+              <button
+                type="button"
+                onClick={stopVideo}
+                className="recognition-button recognition-button--neutral"
+              >
+                Stop
+              </button>
+              <button
+                type="button"
+                onClick={verify}
+                disabled={!canVerify}
+                className="recognition-button recognition-button--verify"
+              >
+                {verifyText}
+              </button>
             </div>
-          </main>
+          )}
+        </section>
+      </main>
 
-          <ToastContainer />
-        </div>
-      </div>
+      <ToastContainer theme={theme} />
     </div>
   );
 };

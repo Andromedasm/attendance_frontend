@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Sidebar from './Sidebar';
-
-const HEADER_H = 84;
+import './manual.scss';
 
 // manuals 保持不变（你原来的对象 그대로）
 const manuals = {
@@ -161,82 +160,106 @@ Webアプリを起動した際に表示されるメインページです。
 `,
 };
 
-const Manual: React.FC = () => {
-  const [selected, setSelected] = useState<keyof typeof manuals>('home');
+type ManualKey = keyof typeof manuals;
 
-  const options = useMemo(() => Object.keys(manuals) as (keyof typeof manuals)[], []);
+const manualKeys = Object.keys(manuals) as ManualKey[];
+const manualLabel = (key: ManualKey) => (key === 'home' ? 'ホーム' : key === 'Sidebar' ? 'サイドバー' : key);
+
+const Manual: React.FC = () => {
+  const [selected, setSelected] = useState<ManualKey>('home');
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+
+  const selectManual = (key: ManualKey) => {
+    setSelected(key);
+    scrollContainerRef.current?.scrollTo({ top: 0 });
+  };
 
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100">
-      <div className="flex h-dvh overflow-hidden">
-        <Sidebar />
+    <div className="manual-surface h-[100svh] overflow-hidden font-sans">
+      <Sidebar />
 
-        <div className="flex-1 overflow-hidden">
-          {/* 极简 header（左侧留汉堡按钮位） */}
-          <header
-            className="border-b border-black/5 bg-white/80 backdrop-blur"
-            style={{ height: HEADER_H }}
-          >
-            <div className="flex h-full items-center justify-between px-6">
-              <div className="w-16 shrink-0" aria-hidden="true" />
-              <div />
-            </div>
-          </header>
+      <div className="manual-orb manual-orb--one" aria-hidden="true" />
+      <div className="manual-orb manual-orb--two" aria-hidden="true" />
 
-          {/* main 负责滚动（防溢出） */}
-          <main
-            className="overflow-auto px-6 py-6"
-            style={{ height: `calc(100dvh - ${HEADER_H}px)` }}
-          >
-            <div className="grid grid-cols-[360px_1fr] gap-6">
-              {/* 左：选择器（做大、好点） */}
-              <aside className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-black/5">
-                <select
-                  value={selected}
-                  onChange={(e) => setSelected(e.target.value as keyof typeof manuals)}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-semibold text-slate-900
-                             shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
-                >
-                  {options.map((key) => (
-                    <option key={String(key)} value={key}>
-                      {String(key)}
-                    </option>
-                  ))}
-                </select>
-
-                {/* 极少量提示文字（想更极简可删掉） */}
-                <p className="mt-4 text-sm font-semibold text-slate-500">
-                  画面左上のボタンでメニューを開けます
-                </p>
-              </aside>
-
-              {/* 右：Markdown 内容（现代卡片 + typography） */}
-              <article
-                className={[
-                  'rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-black/5',
-                  'prose prose-slate max-w-none',
-                  // iPad 横屏：字号更大、更易读
-                  'prose-base lg:prose-lg',
-                  'prose-headings:tracking-tight prose-headings:font-extrabold',
-                  'prose-h1:border-b prose-h1:pb-3 prose-h1:border-slate-200',
-                  'prose-h2:border-b prose-h2:pb-2 prose-h2:border-slate-200',
-                  'prose-a:text-blue-600 hover:prose-a:text-blue-700',
-                  'prose-strong:text-slate-900',
-                  'prose-li:my-1',
-                  'prose-table:table-auto',
-                  'prose-th:bg-slate-50',
-                  'prose-th:font-bold',
-                  'prose-th:border prose-td:border prose-th:border-slate-200 prose-td:border-slate-200',
-                  'prose-th:p-2 prose-td:p-2',
-                  'leading-relaxed',
-                ].join(' ')}
+      <main
+        ref={scrollContainerRef}
+        className="relative z-10 h-full overflow-y-auto px-4 pb-8 pt-24 sm:px-6 sm:pb-10 lg:px-10"
+      >
+        <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[17rem_minmax(0,1fr)]">
+          <div className="manual-glass sticky top-4 z-20 rounded-2xl p-2.5 lg:hidden">
+            <div className="relative">
+              <select
+                value={selected}
+                onChange={(event) => selectManual(event.target.value as ManualKey)}
+                aria-label="マニュアル"
+                className="h-12 w-full appearance-none rounded-xl border border-white/80 bg-white/75 px-4 pr-10 text-sm font-semibold text-slate-900 outline-hidden transition focus-visible:border-cyan-500 focus-visible:ring-4 focus-visible:ring-cyan-500/15"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{manuals[selected]}</ReactMarkdown>
-              </article>
+                {manualKeys.map((key) => (
+                  <option key={String(key)} value={key}>
+                    {manualLabel(key)}
+                  </option>
+                ))}
+              </select>
+              <i
+                className="fa-solid fa-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400"
+                aria-hidden="true"
+              />
             </div>
-          </main>
+          </div>
+
+          <aside className="manual-glass hidden self-start rounded-[1.75rem] p-2.5 lg:sticky lg:top-6 lg:block">
+            <nav aria-label="マニュアル">
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                {manualKeys.map((key) => {
+                  const isActive = selected === key;
+
+                  return (
+                    <li key={String(key)}>
+                      <button
+                        type="button"
+                        onClick={() => selectManual(key)}
+                        aria-pressed={isActive}
+                        className={`flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-left text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 ${
+                          isActive
+                            ? 'bg-slate-900 text-white shadow-[0_12px_30px_rgba(15,23,42,0.2)]'
+                            : 'text-slate-600 hover:bg-white/75 hover:text-slate-950'
+                        }`}
+                      >
+                        <span>{manualLabel(key)}</span>
+                        <span
+                          className={`size-1.5 rounded-full transition ${
+                            isActive ? 'bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.9)]' : 'bg-slate-300'
+                          }`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </aside>
+
+          <article
+            className={[
+              'manual-article min-w-0 rounded-[2rem] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10',
+              'prose prose-slate prose-base max-w-none lg:prose-lg',
+              'prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-950',
+              'prose-h1:mt-0 prose-h1:border-b prose-h1:border-slate-200/80 prose-h1:pb-6',
+              'prose-h2:border-b prose-h2:border-slate-200/70 prose-h2:pb-3',
+              'prose-p:text-slate-600 prose-li:my-1 prose-li:text-slate-600',
+              'prose-strong:text-slate-900 prose-marker:text-cyan-600',
+              'prose-hr:border-slate-200/80',
+              'prose-blockquote:rounded-r-2xl prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-50/70 prose-blockquote:px-5 prose-blockquote:py-2 prose-blockquote:not-italic',
+              'prose-table:table-auto prose-th:bg-slate-50 prose-th:font-bold',
+              'prose-th:border prose-td:border prose-th:border-slate-200 prose-td:border-slate-200',
+              'prose-th:p-2 prose-td:p-2',
+            ].join(' ')}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{manuals[selected]}</ReactMarkdown>
+          </article>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

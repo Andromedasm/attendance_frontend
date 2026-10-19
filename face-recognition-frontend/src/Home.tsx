@@ -1,173 +1,121 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import FaceRecognitionIcon from './FaceRecognitionIcon';
+import ThemeBackdrop from './ThemeBackdrop';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from './theme-context';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import './index.css';
-import moment from 'moment';
+import './clock.scss';
+
+const twoDigits = (value: number) => value.toString().padStart(2, '0');
 
 const Home: React.FC = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const { theme } = useTheme();
+    const [now, setNow] = useState(() => new Date());
 
-  useEffect(() => {
-    const updateTime = () => {
-      document.documentElement.style.setProperty('--timer-day', `'${moment().format('dd')}'`);
-      document.documentElement.style.setProperty('--timer-hours', `'${moment().format('HH')}'`);
-      document.documentElement.style.setProperty('--timer-minutes', `'${moment().format('mm')}'`);
-      document.documentElement.style.setProperty('--timer-seconds', `'${moment().format('ss')}'`);
-      requestAnimationFrame(updateTime);
-    };
-    requestAnimationFrame(updateTime);
-  }, []);
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(new Date()), 1000);
+        return () => window.clearInterval(timer);
+    }, []);
 
-  return (
-    <div className="flex h-screen font-sans antialiased overflow-hidden">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css?family=Montserrat:400,700');
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'おはようございます' : hour < 18 ? 'お疲れさまです' : 'こんばんは';
+    const dateLabel = new Intl.DateTimeFormat('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
+    }).format(now);
 
-        /* ===== iOS-like background (scoped to Home) ===== */
-        .home-ios-bg {
-          position: relative;
-          background:
-            radial-gradient(1200px 700px at 20% 10%, rgba(56,189,248,.35), transparent 60%),
-            radial-gradient(900px 600px at 80% 20%, rgba(232,121,249,.28), transparent 55%),
-            radial-gradient(900px 700px at 60% 90%, rgba(251,191,36,.20), transparent 55%),
-            linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%);
-        }
+    const clockUnits = [
+        {
+            label: '曜日',
+            value: new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(now),
+        },
+        { label: '時', value: twoDigits(hour) },
+        { label: '分', value: twoDigits(now.getMinutes()) },
+        { label: '秒', value: twoDigits(now.getSeconds()) },
+    ];
 
-        /* ===== keep your timer mechanism ===== */
-        .clock-day:before { content: var(--timer-day); }
-        .clock-hours:before { content: var(--timer-hours); }
-        .clock-minutes:before { content: var(--timer-minutes); }
-        .clock-seconds:before { content: var(--timer-seconds); }
+    return (
+        <div className="theme-surface home-surface min-h-[100svh] overflow-hidden font-sans" data-theme={theme}>
+            <Sidebar />
+            <ThemeToggle />
+            <ThemeBackdrop />
 
-        /* ===== glass clock container ===== */
-        .clock-container {
-          margin-top: 30px;
-          margin-bottom: 30px;
+            <main className="relative z-10 flex min-h-[100svh] items-center justify-center overflow-y-auto px-4 py-20 sm:px-8 sm:py-24">
+                <section className="liquid-panel w-full max-w-5xl rounded-[2rem] px-5 py-6 sm:rounded-[2.5rem] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+                    <div className="relative z-10">
+                        <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p className="home-eyebrow mb-4 flex items-center gap-2 text-xs font-bold tracking-[0.24em] sm:text-sm">
+                                    <span className="inline-block size-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]" />
+                                    FACE ATTENDANCE
+                                </p>
+                                <h1 className="home-title text-3xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+                                    {greeting}
+                                </h1>
+                                <p className="home-date mt-3 text-sm sm:text-base">{dateLabel}</p>
+                            </div>
 
-          /* glass */
-          background: rgba(15, 23, 42, 0.35); /* slate-900/35 */
-          border: 1px solid rgba(255,255,255,0.22);
-          border-radius: 24px;
-          padding: 56px 22px;
+                            <div className="home-status-pill inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-[0.12em] shadow-lg backdrop-blur-xl">
+                                <span className="relative flex size-2.5">
+                                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-300 opacity-60 motion-reduce:animate-none" />
+                                    <span className="relative inline-flex size-2.5 rounded-full bg-emerald-300" />
+                                </span>
+                                SYSTEM ONLINE
+                            </div>
+                        </header>
 
-          /* iOS blur */
-          backdrop-filter: blur(18px) saturate(140%);
-          -webkit-backdrop-filter: blur(18px) saturate(140%);
+                        <time dateTime={now.toISOString()} className="sr-only">
+                            {dateLabel} {twoDigits(hour)}:{twoDigits(now.getMinutes())}:{twoDigits(now.getSeconds())}
+                        </time>
 
-          /* soft shadow */
-          box-shadow:
-            0 30px 80px rgba(0,0,0,.22),
-            inset 0 1px 0 rgba(255,255,255,.18);
+                        <div className="mt-9 grid grid-cols-2 gap-3 sm:mt-12 sm:grid-cols-4 sm:gap-4" aria-label="現在時刻">
+                            {clockUnits.map((unit) => (
+                                <div key={unit.label} className="clock-tile rounded-2xl px-3 py-5 text-center sm:rounded-3xl sm:px-5 sm:py-7">
+                                    <span className="clock-value block text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                                        {unit.value}
+                                    </span>
+                                    <span className="clock-label mt-2 block text-[0.65rem] font-bold tracking-[0.28em] sm:text-xs">
+                                        {unit.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
 
-          display: flex;
-        }
+                        <button
+                            type="button"
+                            onClick={() => navigate('/attendance')}
+                            className="liquid-action group mt-8 flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left text-white transition duration-300 hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200 sm:mt-10 sm:rounded-3xl sm:px-8 sm:py-6"
+                        >
+                            <span className="flex min-w-0 items-center gap-4">
+                                <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/25 bg-white/15 shadow-inner sm:size-14">
+                                    <FaceRecognitionIcon className="size-7 sm:size-8" />
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block text-xl font-bold sm:text-2xl">打刻を開始</span>
+                                    <span className="mt-0.5 block truncate text-xs text-cyan-50/70 sm:text-sm">
+                                        顔認証で出勤・退勤を記録します
+                                    </span>
+                                </span>
+                            </span>
+                            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/15 transition-transform duration-300 group-hover:translate-x-1">
+                                <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                            </span>
+                        </button>
 
-        .clock-col {
-          text-align: center;
-          margin-right: 40px;
-          margin-left: 40px;
-          min-width: 92px;
-          position: relative;
-        }
-
-        /* dotted separators */
-        .clock-col:not(:last-child):before,
-        .clock-col:not(:last-child):after {
-          content: "";
-          background-color: rgba(255,255,255,.45);
-          height: 6px;
-          width: 6px;
-          border-radius: 999px;
-          display: block;
-          position: absolute;
-          right: -42px;
-          box-shadow: 0 0 0 6px rgba(255,255,255,0.06);
-        }
-        .clock-col:not(:last-child):before { top: 36%; }
-        .clock-col:not(:last-child):after { top: 52%; }
-
-        .clock-timer:before {
-          color: rgba(255,255,255,.96);
-          font-size: 4.15rem;
-          text-transform: uppercase;
-          font-family: 'Montserrat', 'sans-serif';
-          font-weight: 700;
-          letter-spacing: -0.03em;
-          text-shadow: 0 8px 24px rgba(0,0,0,.25);
-        }
-
-        .clock-label {
-          color: rgba(255,255,255,.55);
-          text-transform: uppercase;
-          font-size: .72rem;
-          margin-top: 12px;
-          font-family: 'Montserrat', 'sans-serif';
-          font-weight: 700;
-          letter-spacing: .18em;
-        }
-
-        @media (max-width: 825px) {
-          .clock-container {
-            flex-direction: column;
-            padding-top: 40px;
-            padding-bottom: 40px;
-          }
-          .clock-col + .clock-col { margin-top: 20px; }
-          .clock-col:before,
-          .clock-col:after { display: none !important; }
-        }
-      `}</style>
-
-      <Sidebar />
-
-      <div className="home-ios-bg flex-1 flex flex-col items-center justify-center p-10 w-full min-w-0">
-        {/* clock (structure unchanged) */}
-        <div className="clock-container">
-          <div className="clock-col">
-            <p className="clock-day clock-timer"></p>
-            <p className="clock-label">Day</p>
-          </div>
-          <div className="clock-col">
-            <p className="clock-hours clock-timer"></p>
-            <p className="clock-label">Hours</p>
-          </div>
-          <div className="clock-col">
-            <p className="clock-minutes clock-timer"></p>
-            <p className="clock-label">Minutes</p>
-          </div>
-          <div className="clock-col">
-            <p className="clock-seconds clock-timer"></p>
-            <p className="clock-label">Seconds</p>
-          </div>
+                        <footer className="home-hint mt-5 flex items-center justify-center gap-2 text-center text-xs sm:mt-7">
+                            <i className="fa-solid fa-camera" aria-hidden="true" />
+                            カメラを使用できる状態で開始してください
+                        </footer>
+                    </div>
+                </section>
+            </main>
         </div>
-
-        {/* CTA: also glassy / iOS-like */}
-        <button
-          type="button"
-          onClick={() => navigate('/attendance')}
-          className="
-    mt-10 px-12 py-6
-    text-3xl font-extrabold text-white
-    rounded-2xl
-    animate-bounce
-    transition
-    hover:scale-105 active:scale-[0.99]
-
-    bg-gradient-to-r from-sky-300/60 via-fuchsia-300/45 to-amber-200/55
-    backdrop-blur-xl
-    ring-1 ring-white/40
-    shadow-[0_20px_60px_rgba(0,0,0,0.18)]
-    hover:bg-gradient-to-r hover:from-white/38 hover:via-white/26 hover:to-white/38
-
-    focus:outline-none focus:ring-4 focus:ring-white/50
-  "
-        >
-          打刻開始はこちら
-        </button>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Home;
