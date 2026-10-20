@@ -33,6 +33,18 @@
 - 处理失败会清理临时文件，数据库异常会回滚并关闭资源。
 - 后端由 `facerecognition-fastapi-backend.service` 运行，Python 修改需要重启服务后生效。
 
+## 数据库等待与缓存刷新上限
+
+- 考勤使用同一个 20 秒处理预算，包含请求日志已记录的上传解析和线程排队耗时。人脸缓存、门店查询、主备连接、多人逐人写入共用剩余时间；每个步骤不会重置预算。确认操作还受原凭证的剩余期限约束。
+- 考勤数据库连接使用独立的非阻塞 libpq 轮询：DNS 和连接握手共用最多 3 秒；单条 SQL/提交等待最多 5 秒，且不能超出请求剩余预算。数据库断流时会丢弃连接并退出等待，不启动一个超时后仍继续运行的查询线程，也不设置全局 psycopg2 wait callback。
+- 这些连接单独设置 `statement_timeout=5000`、`lock_timeout=1000`、`idle_in_transaction_session_timeout=5000`（毫秒），并设置 TCP 断流检测；不修改数据库全局配置。其他未传入期限的数据库调用保留原连接方式。
+- 缓存读写使用短锁，刷新使用另一把锁；等待锁最多 1 秒，并受剩余预算约束。只允许一个刷新者，数据库读取和向量转换不会占住缓存读写锁。有效缓存仍可读取，过期缓存不会在刷新失败时被用于识别。
+- 保留原有 60 秒 TTL 及其刷新开始时间起点、强制刷新和手动清除语义。旧刷新遇到手动清除会丢弃读取结果，避免重新发布已失效的人脸数据。数据库资源在异常和解析失败时也会关闭。
+- 显式事务保持原有查重、更新、插入和提交边界。只有建立主库连接失败才尝试备库；SQL 或提交失败不会触发切库重写。提交已被数据库确认的员工保持成功；预算耗尽后不会继续写后续员工。提交请求已发送但回复丢失仍标记结果未知，要求核对记录，不自动重试。
+- 超时日志 `attendance_wait_timed_out` 记录 `request_id`、等待阶段和结果是否未知，不记录 SQL 参数、人脸向量或数据库密码。
+
+20 秒是后端处理预算及数据库等待截止时间，并非强制终止上传、CUDA 或任意 Python 运算的进程计时器。已在运行的 GPU 调用仍由原模型完成，返回后若预算已耗尽，不会继续开始考勤写入。
+
 ## 定位下一次网络问题
 
 日志位于 `/home/bubble/fastapi_backend/logs/app.json.log`，时间为 UTC（日本时间减 9 小时）。
@@ -58,7 +70,13 @@ npm run build
 后端（`/home/bubble/fastapi_backend`）：
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m unittest tests.test_attendance tests.test_attendance_participants tests.test_request_logging tests.test_connections tests.test_face_cache tests.test_timecard_sync
+PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m unittest tests.test_attendance tests.test_attendance_participants tests.test_attendance_waits tests.test_request_logging tests.test_connections tests.test_attendance_io tests.test_face_cache tests.test_timecard_sync
 ```
 
-测试使用浏览器、GPU 和数据库的替身，不执行真实打刻，不修改考勤数据。前端覆盖 `mediaTime=0`、不同时间轴、帧计数停滞、弹窗中的临时暂停/静音、恢复与原到期时间、编码中断、提交后中断，以及手动重启。真实 iPad 摄像头与 VPN 的现场验证仍需在该设备和链路上完成。
+数据库驱动的隔离集成验证（需要本机 PostgreSQL 工具，自动建立并清理私有临时数据库）：
+
+```bash
+ATTENDANCE_RUN_PG_TESTS=1 PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m unittest -v tests.test_attendance_io_integration
+```
+
+单元测试使用浏览器、GPU 和数据库的替身；集成测试仅使用自己的临时 PostgreSQL 实例，覆盖事务、SQL 超时、锁等待、无响应连接及提交回复丢失，均不执行真实打刻、不修改生产考勤数据。前端覆盖 `mediaTime=0`、不同时间轴、帧计数停滞、弹窗中的临时暂停/静音、恢复与原到期时间、编码中断、提交后中断，以及手动重启。真实 iPad 摄像头与 VPN 的现场验证仍需在该设备和链路上完成。
