@@ -1,9 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import FaceRecognitionIcon from './FaceRecognitionIcon';
+import ThemeBackdrop from './ThemeBackdrop';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from './theme-context';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './styles.scss';
+import './recognition.scss';
+import './attendance.scss';
 import { ToastContainer, toast, Id } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -12,6 +18,7 @@ const CAMERA_TIMEOUT_MS = 10_000;
 const CAPTURE_TIMEOUT_MS = 5_000;
 const FRESH_FRAME_TIMEOUT_MS = 2_000;
 const CONFIRM_TIMEOUT_MS = 20_000;
+const ATTENDANCE_UI_STORAGE_KEY = 'face-attendance-ui';
 
 class AttendanceTimeoutError extends Error {}
 class AttendanceHttpError extends Error {
@@ -166,6 +173,24 @@ const waitForFreshAttendanceFrame = (video: HTMLVideoElement, signal: AbortSigna
 
 const Attendance: React.FC = () => {
     const navigate = useNavigate();
+    const { theme } = useTheme();
+    const [uiMode, setUiMode] = useState<'legacy' | 'modern'>(() => {
+        try {
+            return window.localStorage.getItem(ATTENDANCE_UI_STORAGE_KEY) === 'modern' ? 'modern' : 'legacy';
+        } catch {
+            return 'legacy';
+        }
+    });
+    const isModern = uiMode === 'modern';
+    const toggleUiMode = () => {
+        const nextMode = isModern ? 'legacy' : 'modern';
+        setUiMode(nextMode);
+        try {
+            window.localStorage.setItem(ATTENDANCE_UI_STORAGE_KEY, nextMode);
+        } catch {
+            // Switching layouts still works when Safari storage is unavailable.
+        }
+    };
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const mountedRef = useRef(true);
     const activePunchRef = useRef<AbortController | null>(null);
@@ -635,11 +660,29 @@ const Attendance: React.FC = () => {
     const remainingSeconds = (expiresAt: number) => Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
 
     return (
-        <div className="flex h-screen font-sans antialiased bg-gray-200">
+        <div
+            className={isModern
+                ? 'theme-surface recognition-surface attendance-surface--modern'
+                : 'flex h-screen font-sans antialiased bg-gray-200'}
+            data-theme={isModern ? theme : undefined}
+        >
             <Sidebar />
-            <div className="flex-1 flex flex-col items-center justify-center p-10">
+            <button
+                type="button"
+                className={`attendance-ui-toggle${isModern ? ' attendance-ui-toggle--modern' : ''}`}
+                onClick={toggleUiMode}
+                aria-label={isModern ? '従来のデザインに切り替える' : '新しいデザインに切り替える'}
+                title={isModern ? '従来のデザインに切り替える' : '新しいデザインに切り替える'}
+                aria-pressed={isModern}
+            >
+                <i className={`fa-solid ${isModern ? 'fa-table-cells-large' : 'fa-wand-magic-sparkles'}`} aria-hidden="true" />
+            </button>
+            {isModern && <ThemeToggle />}
+            {isModern && <ThemeBackdrop />}
+            <div className={isModern ? 'recognition-main attendance-main' : 'flex-1 flex flex-col items-center justify-center p-10'}>
                 {selection && (
-                    <Dialog open onClose={() => updateSelection(null)} maxWidth="md" fullWidth>
+                    <Dialog open onClose={() => updateSelection(null)} maxWidth="md" fullWidth
+                        slotProps={{ paper: { className: isModern ? 'recognition-dialog attendance-dialog' : undefined } }}>
                         <DialogTitle style={{ fontSize: '1.5rem' }}>打刻する社員を選択してください</DialogTitle>
                         <DialogContent>
                             <DialogContentText>
@@ -650,9 +693,9 @@ const Attendance: React.FC = () => {
                             </p>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {selection.data.candidates?.map(candidate => (
-                                    <label key={candidate.id} className={`flex items-center gap-4 rounded-xl border p-4 ${
+                                    <label key={candidate.id} className={`flex items-center gap-4 rounded-xl border p-4 ${isModern ? 'attendance-candidate ' : ''}${
                                         candidate.eligible ? 'cursor-pointer border-slate-300' : 'border-slate-200 bg-slate-100 text-slate-500'
-                                    }`}>
+                                    }`} data-eligible={candidate.eligible}>
                                         <input type="checkbox" aria-label={`打刻対象 ${candidate.employee_number || candidate.id}`}
                                             className="h-6 w-6" checked={selectedCandidates.includes(candidate.id)}
                                             disabled={!candidate.eligible || isPunching}
@@ -685,7 +728,8 @@ const Attendance: React.FC = () => {
                 {confirmation && !isPunching && (
                     <Dialog open onClose={() => {
                         if (confirmationsRef.current[0] === confirmation) updateConfirmations(confirmationsRef.current.slice(1));
-                    }} maxWidth="md" fullWidth>
+                    }} maxWidth="md" fullWidth
+                        slotProps={{ paper: { className: isModern ? 'recognition-dialog attendance-dialog' : undefined } }}>
                         <DialogTitle style={{ fontSize: '1.5rem' }}>打刻の上書き確認</DialogTitle>
                         <DialogContent>
                             <div className="mb-4 flex items-center gap-4">
@@ -715,51 +759,66 @@ const Attendance: React.FC = () => {
                         </DialogActions>
                     </Dialog>
                 )}
-                <div className="flex flex-col items-center justify-center h-full">
-                    <video ref={videoRef} width="640" height="480" className="rounded-lg shadow-lg mb-4" autoPlay playsInline muted />
-                    <div className="mb-4 flex gap-6">
-                        <button className={`
+                <div className={isModern ? 'recognition-panel attendance-panel' : 'flex flex-col items-center justify-center h-full'}>
+                    <video ref={videoRef} width="640" height="480"
+                        className={isModern ? 'attendance-preview' : 'rounded-lg shadow-lg mb-4'} autoPlay playsInline muted />
+                    <div className={isModern ? 'attendance-actions' : 'mb-4 flex gap-6'}>
+                        <button type="button" aria-pressed={selectedStatus === 1}
+                            className={isModern
+                                ? `attendance-status attendance-status--in${selectedStatus === 1 ? ' is-selected' : ''}`
+                                : `
                             text-white bg-linear-to-r from-cyan-500 to-blue-500 hover:bg-linear-to-bl
                             focus:outline-hidden font-medium text-2xl px-24 py-10 text-center transition-transform
                             transform rounded-lg
                             ${selectedStatus === 1 ? 'scale-110 ring-4 ring-yellow-300 ring-offset-2 ring-offset-blue-500 border-4 border-white shadow-xl' : 'shadow-md'}
                         `} onClick={event => { event.stopPropagation(); handleStatusClick(1); }}>
-                            {selectedStatus === 1 ? '🚀 出勤' : '出勤'}
+                            {isModern && <i className="fa-solid fa-arrow-right-to-bracket" aria-hidden="true" />}
+                            {isModern ? '出勤' : selectedStatus === 1 ? '🚀 出勤' : '出勤'}
                         </button>
-                        <button className={`
+                        <button type="button" aria-pressed={selectedStatus === 2}
+                            className={isModern
+                                ? `attendance-status attendance-status--out${selectedStatus === 2 ? ' is-selected' : ''}`
+                                : `
                             text-white bg-linear-to-br from-pink-500 to-orange-400 hover:bg-linear-to-bl
                             focus:outline-hidden font-medium text-2xl px-24 py-10 text-center transition-transform
                             transform rounded-lg
                             ${selectedStatus === 2 ? 'scale-110 ring-4 ring-pink-300 ring-offset-2 ring-offset-orange-400 border-4 border-white shadow-xl' : 'shadow-md'}
                         `} onClick={event => { event.stopPropagation(); handleStatusClick(2); }}>
-                            {selectedStatus === 2 ? '🌙 退勤' : '退勤'}
+                            {isModern && <i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />}
+                            {isModern ? '退勤' : selectedStatus === 2 ? '🌙 退勤' : '退勤'}
                         </button>
                         <button onClick={buttonText === 'Start Video' ? startVideo : startAttendance}
-                            disabled={isPunching || isStartingCamera} className={`
+                            disabled={isPunching || isStartingCamera}
+                            className={isModern
+                                ? `recognition-button attendance-punch ${buttonText === 'Start Video' ? 'recognition-button--start' : 'recognition-button--primary'}`
+                                : `
                             text-white font-semibold text-3xl px-16 py-8 transition-transform transform
                             focus:outline-hidden focus:ring-2 focus:ring-white/75 rounded-full shadow-md
                             ${isPunching || isStartingCamera ? 'bg-gray-400 cursor-not-allowed' : buttonText === 'Start Video' ? 'bg-green-500 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-700'}
-                        `}>{isStartingCamera ? 'カメラ起動中...' : buttonText}</button>
+                        `}>
+                            {isModern && <FaceRecognitionIcon className="attendance-punch-icon" />}
+                            {isStartingCamera ? 'カメラ起動中...' : buttonText}
+                        </button>
                     </div>
                     {buttonText !== 'Start Video' && (
-                        <button className="mb-3 text-sm underline text-slate-600" disabled={isPunching || isStartingCamera}
+                        <button className={isModern ? 'attendance-restart' : 'mb-3 text-sm underline text-slate-600'} disabled={isPunching || isStartingCamera}
                             onClick={() => { stopVideo(); void startVideo(); }}>カメラを再起動</button>
                     )}
                     {attendanceDetails.length > 0 && (
-                        <section className="mt-4 w-full max-w-3xl rounded-2xl border border-white/60 bg-white/75 px-6 py-4 shadow-lg backdrop-blur-xl" aria-live="polite">
-                            <p className="mb-3 text-sm font-bold tracking-[0.2em] text-emerald-700">打刻完了</p>
+                        <section className={isModern ? 'attendance-results' : 'mt-4 w-full max-w-3xl rounded-2xl border border-white/60 bg-white/75 px-6 py-4 shadow-lg backdrop-blur-xl'} aria-live="polite">
+                            <p className={isModern ? 'attendance-results-title' : 'mb-3 text-sm font-bold tracking-[0.2em] text-emerald-700'}>打刻完了</p>
                             {attendanceDetails.map(detail => (
-                                <dl key={detail.employee_number} className="mb-3 grid gap-3 text-slate-700 sm:grid-cols-4">
-                                    <div><dt className="text-xs text-slate-500">社員番号</dt><dd className="font-semibold">{detail.employee_number}</dd></div>
-                                    <div><dt className="text-xs text-slate-500">社員名</dt><dd className="font-semibold">{detail.employee_name}</dd></div>
-                                    <div><dt className="text-xs text-slate-500">打刻時間</dt><dd className="font-semibold">{detail.attendance_time}</dd></div>
-                                    <div><dt className="text-xs text-slate-500">打刻種類</dt><dd className="font-semibold">{detail.status}</dd></div>
+                                <dl key={detail.employee_number} className={isModern ? 'attendance-result-row' : 'mb-3 grid gap-3 text-slate-700 sm:grid-cols-4'}>
+                                    <div><dt className={isModern ? 'attendance-result-label' : 'text-xs text-slate-500'}>社員番号</dt><dd className="font-semibold">{detail.employee_number}</dd></div>
+                                    <div><dt className={isModern ? 'attendance-result-label' : 'text-xs text-slate-500'}>社員名</dt><dd className="font-semibold">{detail.employee_name}</dd></div>
+                                    <div><dt className={isModern ? 'attendance-result-label' : 'text-xs text-slate-500'}>打刻時間</dt><dd className="font-semibold">{detail.attendance_time}</dd></div>
+                                    <div><dt className={isModern ? 'attendance-result-label' : 'text-xs text-slate-500'}>打刻種類</dt><dd className="font-semibold">{detail.status}</dd></div>
                                 </dl>
                             ))}
                         </section>
                     )}
                 </div>
-                <ToastContainer />
+                <ToastContainer className="attendance-toast-container" theme={theme} />
             </div>
         </div>
     );

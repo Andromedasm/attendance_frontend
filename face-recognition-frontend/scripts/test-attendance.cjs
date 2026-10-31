@@ -94,6 +94,9 @@ function createHarness(options = {}) {
   const frameRegistrations = [];
   let tree;
   let Component;
+  const storage = options.storage || new Map();
+  if (options.uiMode !== undefined) storage.set('face-attendance-ui', options.uiMode);
+  const storageWrites = [];
 
   function setTimer(callback, delay = 0, interval = false) {
     const id = nextTimer++;
@@ -253,6 +256,17 @@ function createHarness(options = {}) {
     hidden: false,
   });
   const window = eventTarget({
+    localStorage: {
+      getItem(key) {
+        if (options.storageUnavailable || options.storageReadsThrow) throw new Error('Storage is unavailable');
+        return storage.get(key) ?? null;
+      },
+      setItem(key, value) {
+        if (options.storageUnavailable || options.storageWritesThrow) throw new Error('Storage is unavailable');
+        storage.set(key, String(value));
+        storageWrites.push({ key, value: String(value) });
+      },
+    },
     setTimeout: (callback, delay) => setTimer(callback, delay),
     clearTimeout: clearTimer,
     setInterval: (callback, delay) => setTimer(callback, delay, true),
@@ -271,6 +285,10 @@ function createHarness(options = {}) {
       if (name === 'react') return { __esModule: true, default: React, ...React };
       if (name === 'react-router-dom') return { useNavigate: () => navigate };
       if (name === './Sidebar') return { __esModule: true, default: 'Sidebar' };
+      if (['./ThemeToggle', './ThemeBackdrop', './FaceRecognitionIcon'].includes(name)) {
+        return { __esModule: true, default: name.slice(2) };
+      }
+      if (name === './theme-context') return { useTheme: () => ({ theme: options.theme || 'light', toggleTheme() {} }) };
       if (name === '@mui/material') return Object.fromEntries(['Dialog', 'DialogActions', 'DialogContent', 'DialogContentText', 'DialogTitle', 'Button', 'Checkbox', 'FormControlLabel'].map((name) => [name, name]));
       if (name === 'react-toastify') return { toast, ToastContainer: 'ToastContainer' };
       if (/\.(css|scss)$/.test(name)) return {};
@@ -362,7 +380,7 @@ function createHarness(options = {}) {
   }
   render();
   return {
-    requests, notices, errors, video, stream, flush, advance, unmount,
+    requests, notices, errors, video, stream, flush, advance, unmount, storage, storageWrites,
     frameRegistrations,
     configure(changes) { Object.assign(options, changes); },
     freezeFrames() { options.frameFrozen = true; },
@@ -373,6 +391,9 @@ function createHarness(options = {}) {
     get playCalls() { return playCalls; },
     get updatesAfterUnmount() { return updatesAfterUnmount; },
     mainButton,
+    uiSwitch: () => nodes().find((node) => node.type === 'button' && [
+      '新しいデザインに切り替える', '従来のデザインに切り替える',
+    ].includes(node.props['aria-label'])),
     dialog: () => nodes().find((node) => node.type === 'Dialog' && node.props.open) || nodes().find((node) => node.type === 'Dialog'),
     dialogs: () => nodes().filter((node) => node.type === 'Dialog' && node.props.open),
     nodes,
@@ -416,13 +437,142 @@ function createHarness(options = {}) {
 
 function assertCameraStopped(harness) {
   assert.equal(harness.mainButton().props.disabled, false);
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   assert.equal(harness.video.srcObject, null);
 }
 
 function assertReady(harness) {
   assert.equal(harness.mainButton().props.disabled, false);
-  assert.equal(harness.mainButton().props.children.join(''), '打刻開始');
+  assert.equal(harness.text(harness.mainButton()), '打刻開始');
+}
+
+test('attendance opens in the original design and its design switch contains only an icon', () => {
+  const harness = createHarness();
+  const toggle = harness.uiSwitch();
+  assert.ok(toggle, 'a design switch is available');
+  assert.equal(toggle.props['aria-label'], '新しいデザインに切り替える');
+  assert.equal(toggle.props['aria-pressed'], false);
+  assert.equal(harness.text(toggle), '', 'the icon button must not add visible words');
+  assert.equal(harness.cameraRequests, 0);
+  assert.equal(harness.requests.length, 0);
+  harness.unmount();
+});
+
+test('switching designs preserves the live video ref and source without reopening the camera', async () => {
+  const harness = createHarness();
+  await harness.ready();
+  const initialVideoRef = harness.nodes().find((node) => node.type === 'video').props.ref;
+  const initialSource = harness.video.srcObject;
+  for (const modern of [true, false, true]) {
+    await harness.click(harness.uiSwitch());
+    assert.equal(harness.uiSwitch().props['aria-pressed'], modern);
+    const videos = harness.nodes().filter((node) => node.type === 'video');
+    assert.equal(videos.length, 1, 'both designs must share a single video element');
+    assert.equal(videos[0].props.ref, initialVideoRef);
+    assert.equal(harness.video.srcObject, initialSource);
+    assert.equal(harness.cameraRequests, 1);
+    assert.equal(harness.stoppedTracks, 0);
+    assert.equal(harness.requests.length, 0);
+    assertReady(harness);
+  }
+  harness.unmount();
+});
+
+test('switching designs during a submitted punch keeps its lock and never submits again', async () => {
+  const pending = deferred();
+  const harness = createHarness({ fetch: () => pending.promise });
+  await harness.ready();
+  await harness.punch();
+  const originalSource = harness.video.srcObject;
+  for (let count = 0; count < 2; count++) {
+    await harness.click(harness.uiSwitch());
+    assert.equal(harness.mainButton().props.disabled, true);
+    assert.equal(harness.button('カメラを再起動').props.disabled, true);
+    assert.equal(harness.requests.length, 1);
+    assert.equal(harness.requests[0].signal.aborted, false);
+    assert.equal(harness.video.srcObject, originalSource);
+    assert.equal(harness.cameraRequests, 1);
+    assert.equal(harness.stoppedTracks, 0);
+  }
+  pending.resolve(response({ employee_number: 'E001', employee_name: 'Test', status: '1' }));
+  await harness.flush();
+  assertReady(harness);
+  assert.equal(harness.requests.length, 1);
+  assert.equal(harness.notices.filter((notice) => notice.kind === 'success').length, 1);
+  harness.unmount();
+});
+
+test('successful details still disappear after five seconds when designs are switched', async () => {
+  const harness = createHarness();
+  await harness.ready();
+  await harness.punch();
+  const details = () => harness.nodes().find((node) => node.type === 'section' && node.props['aria-live'] === 'polite');
+  assert.ok(details());
+  assert.match(harness.text(details()), /E001/u);
+  await harness.advance(3000);
+  await harness.click(harness.uiSwitch());
+  assert.ok(details(), 'switching designs retains the current successful result');
+  await harness.advance(2000);
+  assert.equal(details(), undefined, 'switching designs must not extend the original success timer');
+  assert.equal(harness.requests.length, 1);
+  harness.unmount();
+});
+
+test('stored design preference is restored and switching saves the next visit preference', async () => {
+  const storage = new Map([['face-attendance-ui', 'modern']]);
+  const harness = createHarness({ storage });
+  assert.equal(harness.uiSwitch().props['aria-pressed'], true);
+  assert.equal(harness.uiSwitch().props['aria-label'], '従来のデザインに切り替える');
+  await harness.click(harness.uiSwitch());
+  assert.equal(harness.uiSwitch().props['aria-pressed'], false);
+  assert.equal(storage.get('face-attendance-ui'), 'legacy');
+  harness.unmount();
+  const nextVisit = createHarness({ storage });
+  assert.equal(nextVisit.uiSwitch().props['aria-pressed'], false);
+  nextVisit.unmount();
+});
+
+for (const mode of [undefined, 'invalid-value']) {
+  test(`unavailable or invalid design preference defaults to original design (${mode ?? 'no storage'})`, async () => {
+    const harness = createHarness(mode === undefined ? { storageUnavailable: true } : { uiMode: mode });
+    assert.equal(harness.uiSwitch().props['aria-pressed'], false);
+    await harness.click(harness.uiSwitch());
+    assert.equal(harness.uiSwitch().props['aria-pressed'], true);
+    await harness.click(harness.uiSwitch());
+    assert.equal(harness.uiSwitch().props['aria-pressed'], false);
+    assert.equal(harness.cameraRequests, 0);
+    harness.unmount();
+  });
+}
+
+test('a readable preference can still switch when Safari rejects saving it', async () => {
+  const harness = createHarness({ uiMode: 'modern', storageWritesThrow: true });
+  assert.equal(harness.uiSwitch().props['aria-pressed'], true);
+  await harness.click(harness.uiSwitch());
+  assert.equal(harness.uiSwitch().props['aria-pressed'], false);
+  assert.equal(harness.storage.get('face-attendance-ui'), 'modern');
+  harness.unmount();
+});
+
+for (const kind of ['selection', 'override']) {
+  test(`${kind} confirmation keeps its selected person and original expiry across design switches`, async () => {
+    const harness = createHarness({ fetch: () => Promise.resolve(response(kind === 'selection' ? selection() : duplicate())) });
+    await harness.ready();
+    await harness.punch();
+    if (kind === 'selection') await harness.toggle(harness.checkbox('E001'), true);
+    const originalSource = harness.video.srcObject;
+    await harness.advance(15_000);
+    await harness.click(harness.uiSwitch());
+    assert.equal(harness.dialogs().length, 1);
+    assert.match(harness.text(harness.dialog()), /E001/u);
+    if (kind === 'selection') assert.equal(harness.checkbox('E001').props.checked, true);
+    assert.equal(harness.video.srcObject, originalSource);
+    assert.equal(harness.stoppedTracks, 0);
+    await harness.advance(5100);
+    assert.equal(harness.dialogs().length, 0, 'a design switch must not renew a confirmation token');
+    assert.equal(harness.requests.length, 1);
+    harness.unmount();
+  });
 }
 
 for (const phase of ['fetch', 'JSON body']) {
@@ -626,7 +776,7 @@ test('camera permission rejection releases Start Video and does not enable punch
   const harness = createHarness({ getUserMedia: () => Promise.reject(new Error('camera denied')) });
   await harness.ready();
   assert.equal(harness.mainButton().props.disabled, false);
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   assert.equal(harness.requests.length, 0);
   assert.ok(harness.notices.some((notice) => notice.kind === 'error'));
   harness.unmount();
@@ -639,13 +789,13 @@ test('video.play pending times out, stops its acquired stream, and permits anoth
   assert.equal(harness.mainButton().props.disabled, true);
   await harness.advance(15_000);
   assert.equal(harness.mainButton().props.disabled, false);
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   assert.equal(harness.video.srcObject, null);
   assert.ok(harness.stoppedTracks > 0);
   const noticeCount = harness.notices.length;
   playback.resolve();
   await harness.flush();
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   assert.equal(harness.notices.length, noticeCount);
   await harness.ready();
   assertReady(harness);
@@ -659,12 +809,12 @@ test('getUserMedia stream arriving after camera deadline is stopped and never at
   await harness.ready();
   await harness.advance(15_000);
   assert.equal(harness.mainButton().props.disabled, false);
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   camera.resolve(harness.stream);
   await harness.flush();
   assert.ok(harness.stoppedTracks > 0);
   assert.equal(harness.video.srcObject, null);
-  assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+  assert.equal(harness.text(harness.mainButton()), 'Start Video');
   harness.unmount();
 });
 
@@ -920,7 +1070,7 @@ for (const lateResponse of [selection(), duplicate()]) {
     assert.equal(harness.dialogs().length, 0);
     assert.equal(harness.requests.length, 1, 'must not automatically retry after resuming');
     assert.equal(harness.cameraRequests, cameraCount, 'camera recovery requires a new user action');
-    assert.equal(harness.mainButton().props.children.join(''), 'Start Video');
+    assert.equal(harness.text(harness.mainButton()), 'Start Video');
     harness.unmount();
   });
 }
