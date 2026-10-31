@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ThemeContext } from './theme-context';
 import type { AppTheme } from './theme-context';
 
@@ -21,15 +22,18 @@ const getInitialTheme = (): AppTheme => {
 
 const ThemeProvider: React.FC<PropsWithChildren> = ({ children }) => {
     const [theme, setTheme] = useState<AppTheme>(getInitialTheme);
+    const { pathname } = useLocation();
+    const isMobileAttendance = pathname.replace(/\/+$/, '') === '/mobile_attendance';
 
     useLayoutEffect(() => {
         const root = document.documentElement;
-        const themeColor = theme === 'dark' ? '#07111f' : '#edf7fb';
+        const themeColor = theme === 'dark' ? '#07111f' : isMobileAttendance ? '#f8fafc' : '#edf7fb';
 
+        root.toggleAttribute('data-mobile-attendance', isMobileAttendance);
         root.dataset.theme = theme;
         root.style.colorScheme = theme;
         document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColor);
-    }, [theme]);
+    }, [theme, isMobileAttendance]);
 
     useEffect(() => {
         const handleStorage = (event: StorageEvent) => {

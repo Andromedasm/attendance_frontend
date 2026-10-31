@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import ThemeBackdrop from './ThemeBackdrop';
 import ThemeToggle from './ThemeToggle';
@@ -17,35 +17,14 @@ import './recognition.scss';
 
 const Liveness: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const captureIntervalRef = useRef<number | null>(null);
-  const captureSessionRef = useRef(0);
-  const isMountedRef = useRef(true);
-  const isStartingVideoRef = useRef(false);
-  const isCheckingRef = useRef(false);
   const { theme } = useTheme();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [isVideoStarted, setIsVideoStarted] = useState(false);
-  const [isStartingVideo, setIsStartingVideo] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-      isStartingVideoRef.current = false;
-      isCheckingRef.current = false;
-      captureSessionRef.current += 1;
-      if (captureIntervalRef.current !== null) {
-        window.clearInterval(captureIntervalRef.current);
-      }
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
 
   const showAlert = (msg: string) => {
     setAlertMessage(msg);
@@ -53,161 +32,96 @@ const Liveness: React.FC = () => {
   };
 
   const startVideo = () => {
-    if (isStartingVideoRef.current || isVideoStarted) return;
-
-    isStartingVideoRef.current = true;
-    setIsStartingVideo(true);
-
     navigator.mediaDevices
       .getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
         audio: false,
       })
       .then(async (stream) => {
-        streamRef.current = stream;
-
-        if (!isMountedRef.current || !videoRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch (error) {
-          console.warn('Video playback will continue through autoplay when available:', error);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch {}
         }
         setIsVideoStarted(true);
       })
       .catch((error) => {
-        if (!isMountedRef.current) return;
         console.error('Error accessing the webcam', error);
         showAlert('カメラを開始できません: ' + error.message);
-      })
-      .finally(() => {
-        isStartingVideoRef.current = false;
-        if (isMountedRef.current) setIsStartingVideo(false);
       });
   };
 
   const stopVideo = () => {
-    captureSessionRef.current += 1;
-    isCheckingRef.current = false;
-
-    if (captureIntervalRef.current !== null) {
-      window.clearInterval(captureIntervalRef.current);
-      captureIntervalRef.current = null;
-    }
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-
-    if (videoRef.current) videoRef.current.srcObject = null;
+    const v = videoRef.current;
+    const stream = v?.srcObject as MediaStream | null;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    if (v) v.srcObject = null;
     setIsVideoStarted(false);
-    setIsChecking(false);
-  };
-
-  const finishLivenessCheck = (sessionId: number) => {
-    if (captureSessionRef.current !== sessionId) return;
-
-    isCheckingRef.current = false;
-    if (isMountedRef.current) setIsChecking(false);
-  };
-
-  const sendFrames = (frames: Blob[], sessionId: number) => {
-    if (captureSessionRef.current !== sessionId) return;
-
-    const formData = new FormData();
-    frames.forEach((frame, index) => formData.append(`frame${index}`, frame));
-
-    fetch('/api/liveness', { method: 'POST', body: formData })
-      .then((response) => response.json())
-      .then((data) => {
-        if (!isMountedRef.current || captureSessionRef.current !== sessionId) return;
-
-        if (data.error) showAlert('エラー: ' + data.error);
-        else if (data.message) showAlert(data.message);
-        else showAlert('不明なエラーが発生しました');
-      })
-      .catch((error) => {
-        if (!isMountedRef.current || captureSessionRef.current !== sessionId) return;
-        console.error('Error:', error);
-        showAlert('送信エラー: ' + error.message);
-      })
-      .finally(() => finishLivenessCheck(sessionId));
   };
 
   const performLivenessCheck = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    if (!video || !canvas || !video.srcObject) {
-      showAlert('カメラを起動してください');
-      return;
-    }
-    if (!video.videoWidth || !video.videoHeight) {
-      showAlert('カメラの準備が完了していません');
-      return;
-    }
-    if (isCheckingRef.current) return;
-
-    const context = canvas.getContext('2d');
-    if (!context) {
+    if (!videoRef.current || !canvasRef.current) {
       showAlert('Camera is not ready.');
       return;
     }
+    if (!videoRef.current.srcObject) {
+      showAlert('カメラを起動してください');
+      return;
+    }
 
-    isCheckingRef.current = true;
     setIsChecking(true);
+
+    // 这里保留你原来的提示逻辑
     showAlert('頭を左右上下に動かしてください。撮影します...');
 
+    const frames: Blob[] = [];
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    let captureCount = 0;
     const maxFrames = 10;
-    const sessionId = captureSessionRef.current + 1;
-    captureSessionRef.current = sessionId;
-    const encodedFrames: Array<Blob | null> = Array(maxFrames).fill(null);
-    let scheduledCount = 0;
-    let completedCount = 0;
 
-    const intervalId = window.setInterval(() => {
-      if (captureSessionRef.current !== sessionId) {
-        window.clearInterval(intervalId);
-        return;
-      }
-
-      const frameIndex = scheduledCount;
-      scheduledCount += 1;
+    const intervalId = setInterval(() => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      context?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob(
         (blob) => {
-          if (captureSessionRef.current !== sessionId) return;
+          if (blob) frames.push(blob);
+          captureCount++;
 
-          encodedFrames[frameIndex] = blob;
-          completedCount += 1;
-
-          if (completedCount === maxFrames) {
-            const frames = encodedFrames.filter((frame): frame is Blob => frame !== null);
-            if (frames.length === 0) {
-              if (isMountedRef.current) showAlert('画像を取得できませんでした');
-              finishLivenessCheck(sessionId);
-              return;
-            }
-            sendFrames(frames, sessionId);
+          if (captureCount >= maxFrames) {
+            clearInterval(intervalId);
+            sendFrames(frames);
           }
         },
         'image/jpeg',
         0.85
       );
-
-      if (scheduledCount >= maxFrames) {
-        window.clearInterval(intervalId);
-        if (captureIntervalRef.current === intervalId) captureIntervalRef.current = null;
-      }
     }, 500);
+  };
 
-    captureIntervalRef.current = intervalId;
+  const sendFrames = (frames: Blob[]) => {
+    const formData = new FormData();
+    frames.forEach((frame, i) => formData.append(`frame${i}`, frame));
+
+    fetch('/api/liveness', { method: 'POST', body: formData })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) showAlert('エラー: ' + data.error);
+        else if (data.message) showAlert(data.message);
+        else showAlert('不明なエラーが発生しました');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        showAlert('送信エラー: ' + error.message);
+      })
+      .finally(() => {
+        setIsChecking(false);
+      });
   };
 
   return (
@@ -258,8 +172,6 @@ const Liveness: React.FC = () => {
               <button
                 type="button"
                 onClick={startVideo}
-                disabled={isStartingVideo}
-                aria-busy={isStartingVideo}
                 className="recognition-button recognition-button--start"
               >
                 Start Camera
@@ -270,7 +182,6 @@ const Liveness: React.FC = () => {
               <button
                 type="button"
                 onClick={stopVideo}
-                disabled={isChecking}
                 className="recognition-button recognition-button--neutral"
               >
                 Stop

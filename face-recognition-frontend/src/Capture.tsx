@@ -1,64 +1,41 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import ThemeBackdrop from './ThemeBackdrop';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from './theme-context';
-import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Button,
-} from '@mui/material';
-
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import './styles.scss';
 import './recognition.scss';
 
-// 引入 react-toastify
+// 1. 引入 react-toastify
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-interface FaceMatch {
-    employee_number: string | number;
-    employee_name: string;
-    similarity?: number;
-}
-
 const Capture: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
     const { theme } = useTheme();
 
     // 待输入的员工编号、姓名
     const [employeeNumber, setEmployeeNumber] = useState('');
     const [employeeName, setEmployeeName] = useState('');
-    const [message, setMessage] = useState(''); // 显示"取得した社員名"或"見つかりません"等
-    const [status, setStatus] = useState('');  // 显示"アップロード中..."等
+    const [message, setMessage] = useState('');
+    const [status, setStatus] = useState('');
     const [videoStarted, setVideoStarted] = useState(false);
 
-    // 确认框 (保留原先逻辑)
+    // 确认框（保留）
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmMessage, setConfirmMessage] = useState('');
     const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
 
-    // 控制“登録開始”按钮
+    // 用于禁用“登録開始”按钮、改变文字等
     const [isRegistering, setIsRegistering] = useState(false);
     const [registerBtnText, setRegisterBtnText] = useState('登録開始');
 
-    useEffect(() => {
-        return () => {
-            streamRef.current?.getTracks().forEach((track) => track.stop());
-        };
-    }, []);
-
-    // toast 帮助函数
+    // 2. 用 toast 替代原先的 alert 弹窗
     const showToastError = (msg: string) => {
         toast.error(msg, { autoClose: 5000 });
     };
-    const showToastSuccess = (html: string) => {
-        toast.success(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
-    };
+
     const showToastInfo = (html: string) => {
         toast.info(<div dangerouslySetInnerHTML={{ __html: html }} />, { autoClose: 5000 });
     };
@@ -75,8 +52,9 @@ const Capture: React.FC = () => {
         const number = e.target.value;
         setEmployeeNumber(number);
 
+        // 当输入不为空时，调用后端接口获取姓名
         if (number.trim() !== '') {
-            fetch(`/api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
+            fetch(`/facerec_api/get_employee_name?employeeNumber=${encodeURIComponent(number.trim())}`)
                 .then((res) => res.json())
                 .then((data) => {
                     if (data.employeeName) {
@@ -92,7 +70,7 @@ const Capture: React.FC = () => {
                     setMessage('社員名を取得できませんでした');
                 });
         } else {
-            // 若输入为空，清空姓名
+            // 若输入为空，清空员工姓名
             setEmployeeName('');
             setMessage('');
         }
@@ -103,19 +81,18 @@ const Capture: React.FC = () => {
         navigator.mediaDevices
             .getUserMedia({ video: { width: 640, height: 480 } })
             .then((stream) => {
-                streamRef.current = stream;
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     setVideoStarted(true);
                 }
             })
             .catch((error) => {
-                console.error('Error accessing media devices.', error);
+                console.error('Error accessing the media devices.', error);
                 showToastError('ビデオを開始できません: ' + error.message);
             });
     };
 
-    // ================== 注册人脸 (capture) ==================
+    // “登録開始”按钮点击，执行注册
     const capture = () => {
         if (!employeeNumber.trim() || !employeeName.trim()) {
             showToastError('社員番号と名前を記入してください.');
@@ -127,6 +104,7 @@ const Capture: React.FC = () => {
         setRegisterBtnText('登録中...');
         setStatus('アップロード中...');
 
+        const canvas = document.createElement('canvas');
         const video = videoRef.current;
         if (!video) {
             showToastError('ビデオが準備できていません');
@@ -134,7 +112,6 @@ const Capture: React.FC = () => {
             return;
         }
 
-        const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -151,7 +128,7 @@ const Capture: React.FC = () => {
             formData.append('employeeNumber', employeeNumber);
             formData.append('employeeName', employeeName);
 
-            fetch('/api/upload', {
+            fetch('/facerec_api/upload', {
                 method: 'POST',
                 body: formData,
             })
@@ -167,24 +144,23 @@ const Capture: React.FC = () => {
                         // 存在相似人脸 => 用确认框
                         const matchesInfo = data.matches
                             .map(
-                                (match: FaceMatch) =>
-                                    `社員番号: ${match.employee_number}, 名前: ${match.employee_name}, 類似度: ${
-                                        match.similarity?.toFixed(2) ?? 'N/A'
-                                    }`
+                                (match: any) =>
+                                    `社員番号: ${match.employee_number}, 名前: ${match.employee_name}, 類似度: ${match.similarity.toFixed(
+                                        2
+                                    )}`
                             )
                             .join('<br />');
-
                         showConfirm(
                             `類似な顔が存在します:<br />${matchesInfo}<br />アップロードしますか?`,
                             () => {
-                                // 用户点击YES => 加一个 override = true 再上传
                                 formData.append('override', 'true');
-                                fetch('/api/upload', {
+                                fetch('/facerec_api/upload', {
                                     method: 'POST',
                                     body: formData,
                                 })
                                     .then((resp) => resp.json())
                                     .then((data2) => {
+                                        // 用 toast 显示返回信息
                                         showToastInfo(data2.message);
                                     })
                                     .catch((error) => {
@@ -193,7 +169,8 @@ const Capture: React.FC = () => {
                             }
                         );
                     } else {
-                        // 注册成功(或失败信息)
+                        // 注册成功或失败信息
+                        // e.g. data.message
                         showToastInfo(data.message);
                     }
                 })
@@ -201,8 +178,8 @@ const Capture: React.FC = () => {
                     setStatus('');
                     if (error.json) {
                         // 如果error是Response对象
-                        error.json().then((body: { error?: string }) => {
-                            showToastError(body.error ?? 'アップロードに失敗しました');
+                        error.json().then((body: any) => {
+                            showToastError(body.error);
                         });
                     } else {
                         console.error('Error uploading the image.', error);
@@ -216,66 +193,11 @@ const Capture: React.FC = () => {
         });
     };
 
-    // 重置“登録開始”按钮
+    // 重置按钮至“登録開始”
     const resetRegisterButton = () => {
         setIsRegistering(false);
         setStatus('');
         setRegisterBtnText('登録開始');
-    };
-
-    // ================== 验证人脸 (verify) ==================
-    const verifyFace = () => {
-        const video = videoRef.current;
-        if (!video) {
-            showToastError('ビデオが準備できていません');
-            return;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                showToastError('画像を取得できませんでした');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('image', blob);
-
-            fetch('/api/verify', {
-                method: 'POST',
-                body: formData,
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.error) {
-                        showToastError('認証失敗: ' + data.error);
-                    } else if (data.found_faces?.length > 0) {
-                        // 多个 or 单个都显示
-                        const info = data.found_faces
-                            .map(
-                                (f: FaceMatch) =>
-                                    `社員番号: ${f.employee_number}, 名前: ${f.employee_name}, 類似度: ${
-                                        f.similarity?.toFixed(2) ?? 'N/A'
-                                    }`
-                            )
-                            .join('<br/>');
-                        showToastSuccess(`以下の顔が認証されました:<br/>${info}`);
-                    } else if (data.message) {
-                        // 可能是 "一致する顔が見つかりませんでした"
-                        showToastInfo(data.message);
-                    } else {
-                        showToastInfo('認証結果を取得できませんでした');
-                    }
-                })
-                .catch((err) => {
-                    console.error(err);
-                    showToastError('認証エラー: ' + err.message);
-                });
-        });
     };
 
     return (
@@ -341,7 +263,7 @@ const Capture: React.FC = () => {
                             </button>
                         </div>
                     ) : (
-                        <div className="recognition-actions">
+                        <div className="recognition-single-action">
                             <button
                                 type="button"
                                 onClick={capture}
@@ -349,13 +271,6 @@ const Capture: React.FC = () => {
                                 className="recognition-button recognition-button--primary"
                             >
                                 {registerBtnText}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={verifyFace}
-                                className="recognition-button recognition-button--verify"
-                            >
-                                顔認証
                             </button>
                         </div>
                     )}

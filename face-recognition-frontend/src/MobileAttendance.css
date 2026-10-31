@@ -1,0 +1,208 @@
+html[data-mobile-attendance] {
+  --mobile-background: #f8fafc;
+  --mobile-surface: #fff;
+  --mobile-surface-muted: #f1f5f9;
+  --mobile-surface-active: #e2e8f0;
+  --mobile-text: #0f172a;
+  --mobile-text-secondary: #334155;
+  --mobile-text-muted: #64748b;
+  --mobile-border: #e2e8f0;
+  --mobile-ring: rgb(0 0 0 / 5%);
+  --mobile-accent: #4338ca;
+  --mobile-accent-muted: #eef2ff;
+  --mobile-accent-border: #e0e7ff;
+  --mobile-overlay: rgb(255 255 255 / 70%);
+  --mobile-footer: rgb(255 255 255 / 80%);
+  --mobile-start: #0f172a;
+}
+
+html[data-mobile-attendance][data-theme='dark'] {
+  --mobile-background: #07111f;
+  --mobile-surface: #0f172a;
+  --mobile-surface-muted: #1e293b;
+  --mobile-surface-active: #334155;
+  --mobile-text: #f1f5f9;
+  --mobile-text-secondary: #cbd5e1;
+  --mobile-text-muted: #94a3b8;
+  --mobile-border: #334155;
+  --mobile-ring: rgb(148 163 184 / 18%);
+  --mobile-accent: #c7d2fe;
+  --mobile-accent-muted: #1e2545;
+  --mobile-accent-border: #373f66;
+  --mobile-overlay: rgb(15 23 42 / 86%);
+  --mobile-footer: rgb(15 23 42 / 90%);
+  --mobile-start: #334155;
+}
+
+html[data-mobile-attendance],
+html[data-mobile-attendance] body,
+.mobile-attendance {
+  color: var(--mobile-text);
+  background: var(--mobile-background);
+}
+
+.mobile-attendance-status-label,
+.mobile-attendance-overlay-title {
+  color: var(--mobile-text);
+}
+
+.mobile-attendance-manual-button {
+  color: var(--mobile-accent);
+  border-color: var(--mobile-accent-border);
+  background: var(--mobile-surface);
+}
+
+.mobile-attendance-manual-button:active {
+  background: var(--mobile-accent-muted);
+}
+
+.mobile-attendance-camera-toggle {
+  color: var(--mobile-text-muted);
+  background: var(--mobile-surface-active);
+}
+
+.mobile-attendance-camera-toggle.is-on {
+  color: var(--mobile-background);
+  background: var(--mobile-text);
+}
+
+.mobile-attendance-theme-toggle {
+  color: var(--mobile-text-secondary);
+  border-color: var(--mobile-border);
+  background: var(--mobile-surface);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mobile-attendance-theme-toggle:active {
+  background: var(--mobile-surface-muted);
+}
+
+.mobile-attendance-preview,
+.mobile-attendance-status-panel {
+  --tw-ring-color: var(--mobile-ring);
+}
+
+.mobile-attendance-camera-overlay {
+  background: var(--mobile-overlay);
+}
+
+.mobile-attendance-overlay-description {
+  color: var(--mobile-text-secondary);
+}
+
+.mobile-attendance-overlay-hint {
+  color: var(--mobile-text-muted);
+}
+
+.mobile-attendance-status-panel {
+  background: var(--mobile-surface);
+}
+
+.mobile-attendance-status--idle {
+  color: var(--mobile-text-secondary);
+  background: var(--mobile-surface-muted);
+}
+
+.mobile-attendance-status--idle:active {
+  background: var(--mobile-surface-active);
+}
+
+.mobile-attendance-footer {
+  border-color: var(--mobile-ring);
+  background: var(--mobile-footer);
+}
+
+.mobile-attendance-start {
+  background: var(--mobile-start);
+}
+
+html[data-mobile-attendance] .mobile-attendance-override-dialog.MuiPaper-root {
+  color: var(--mobile-text);
+  border: 1px solid var(--mobile-border);
+  background: var(--mobile-surface);
+}
+
+/* The manual is rendered in a portal, outside the attendance page container. */
+html[data-mobile-attendance][data-theme='dark'] .mobile-manual-dialog {
+  color: var(--mobile-text);
+}
+
+html[data-mobile-attendance][data-theme='dark'] .mobile-manual-dialog .MuiPaper-root {
+  color: var(--mobile-text);
+  background: var(--mobile-background);
+}
+
+html[data-mobile-attendance][data-theme='dark'] .mobile-manual-dialog__header {
+  border-color: var(--mobile-border);
+  background: linear-gradient(145deg, var(--mobile-accent-muted), var(--mobile-surface));
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__icon,
+  .mobile-manual-dialog__close,
+  .mobile-manual-dialog__shortcuts button,
+  .mobile-manual-dialog__intro,
+  .mobile-manual-dialog__section,
+  .mobile-manual-dialog__footer
+) {
+  color: var(--mobile-text-secondary);
+  border-color: var(--mobile-border);
+  background: var(--mobile-surface);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__icon,
+  .mobile-manual-dialog__shortcuts button,
+  .mobile-manual-dialog__section-heading > span
+) {
+  color: var(--mobile-accent);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__eyebrow,
+  .mobile-manual-dialog__description
+) {
+  color: var(--mobile-text-muted);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__section-heading h3,
+  .mobile-manual-dialog__markdown strong,
+  .mobile-manual-dialog__markdown td:first-child
+) {
+  color: var(--mobile-text);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__section-heading > span,
+  .mobile-manual-dialog__markdown th,
+  .mobile-manual-dialog__section--help tbody tr
+) {
+  background: var(--mobile-surface-muted);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__markdown table,
+  .mobile-manual-dialog__markdown tbody tr + tr td,
+  .mobile-manual-dialog__section--help tbody tr
+) {
+  border-color: var(--mobile-border);
+}
+
+html[data-mobile-attendance][data-theme='dark'] .mobile-manual-dialog__markdown th {
+  color: var(--mobile-text-muted);
+}
+
+html[data-mobile-attendance][data-theme='dark'] .mobile-manual-dialog__markdown ol > li::before {
+  color: var(--mobile-accent);
+  border-color: var(--mobile-accent-border);
+  background: var(--mobile-accent-muted);
+}
+
+html[data-mobile-attendance][data-theme='dark'] :is(
+  .mobile-manual-dialog__close:active,
+  .mobile-manual-dialog__shortcuts button:active
+) {
+  background: var(--mobile-surface-active);
+}

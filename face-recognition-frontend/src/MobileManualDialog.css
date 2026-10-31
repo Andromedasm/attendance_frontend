@@ -1,0 +1,429 @@
+.mobile-manual-dialog {
+  color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-manual-dialog__header {
+  flex-shrink: 0;
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(145deg, #eef2ff 0%, #fff 70%);
+}
+
+.mobile-manual-dialog__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-manual-dialog__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  background: #fff;
+  color: #4f46e5;
+  box-shadow: 0 3px 10px rgb(79 70 229 / 6%);
+}
+
+.mobile-manual-dialog__titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-manual-dialog__eyebrow {
+  margin: 0 0 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.mobile-manual-dialog__close {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.mobile-manual-dialog__description {
+  margin: 16px 0 14px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.mobile-manual-dialog__shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mobile-manual-dialog__shortcuts button {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  background: #fff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobile-manual-dialog__shortcuts span {
+  color: #818cf8;
+}
+
+.mobile-manual-dialog__content {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-manual-dialog__intro {
+  margin: 16px 16px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #64748b;
+}
+
+.mobile-manual-dialog__intro summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.mobile-manual-dialog__intro summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-manual-dialog__intro summary span {
+  color: #818cf8;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-manual-dialog__intro[open] summary span {
+  transform: rotate(45deg);
+}
+
+.mobile-manual-dialog__intro > .mobile-manual-dialog__markdown {
+  padding: 2px 16px 16px;
+}
+
+.mobile-manual-dialog__section {
+  margin: 16px;
+  padding: 18px;
+  scroll-margin-top: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.mobile-manual-dialog__section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.mobile-manual-dialog__section-heading > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-manual-dialog__section-heading h3 {
+  margin: 2px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.mobile-manual-dialog__markdown {
+  font-size: 14px;
+  line-height: 1.9;
+  overflow-wrap: break-word;
+}
+
+.mobile-manual-dialog__markdown p {
+  margin: 0 0 14px;
+}
+
+.mobile-manual-dialog__markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.mobile-manual-dialog__markdown strong {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.mobile-manual-dialog__markdown ol {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  counter-reset: manual-step;
+}
+
+.mobile-manual-dialog__markdown ol > li {
+  position: relative;
+  margin-bottom: 18px;
+  padding-left: 34px;
+  counter-increment: manual-step;
+}
+
+.mobile-manual-dialog__markdown ol > li::before {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid #e0e7ff;
+  border-radius: 50%;
+  background: #f5f7ff;
+  color: #4f46e5;
+  content: counter(manual-step);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mobile-manual-dialog__markdown ul {
+  margin: 0 0 18px;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.mobile-manual-dialog__markdown ul > li {
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.mobile-manual-dialog__markdown ul > li::marker {
+  color: #a5b4fc;
+}
+
+.mobile-manual-dialog__markdown table {
+  width: 100%;
+  margin: 16px 0;
+  border-spacing: 0;
+  border-collapse: separate;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.mobile-manual-dialog__markdown th,
+.mobile-manual-dialog__markdown td {
+  padding: 11px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.mobile-manual-dialog__markdown th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mobile-manual-dialog__markdown tbody tr + tr td {
+  border-top: 1px solid #e2e8f0;
+}
+
+.mobile-manual-dialog__markdown td:first-child {
+  min-width: 70px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.mobile-manual-dialog__section--help table {
+  border: 0;
+  border-radius: 0;
+}
+
+.mobile-manual-dialog__section--help thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mobile-manual-dialog__section--help tbody,
+.mobile-manual-dialog__section--help tr,
+.mobile-manual-dialog__section--help td {
+  display: block;
+}
+
+.mobile-manual-dialog__section--help tbody tr {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.mobile-manual-dialog__section--help tbody tr:last-child {
+  margin-bottom: 0;
+}
+
+.mobile-manual-dialog__section--help tbody td {
+  padding: 0;
+  border: 0;
+}
+
+.mobile-manual-dialog__section--help tbody td:first-child {
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.mobile-manual-dialog__section--help tbody tr + tr td {
+  border: 0;
+}
+
+.mobile-manual-dialog__footer {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.mobile-manual-dialog__return {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 4px 10px rgb(79 70 229 / 14%);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.mobile-manual-dialog button:focus-visible,
+.mobile-manual-dialog summary:focus-visible {
+  outline: 3px solid #a5b4fc;
+  outline-offset: 3px;
+}
+
+.mobile-manual-dialog__close:active,
+.mobile-manual-dialog__shortcuts button:active {
+  background: #eef2ff;
+}
+
+.mobile-manual-dialog__return:active {
+  background: #4338ca;
+}
+
+@media (max-width: 359px) {
+  .mobile-manual-dialog__header {
+    padding: 18px 16px 14px;
+  }
+
+  .mobile-manual-dialog__description {
+    font-size: 11px;
+  }
+
+  .mobile-manual-dialog__shortcuts button {
+    gap: 3px;
+    font-size: 11px;
+  }
+
+  .mobile-manual-dialog__section {
+    margin: 12px;
+    padding: 14px;
+  }
+
+  .mobile-manual-dialog__section-heading {
+    gap: 8px;
+  }
+
+  .mobile-manual-dialog__intro {
+    margin: 12px 12px 0;
+  }
+
+  .mobile-manual-dialog__markdown th,
+  .mobile-manual-dialog__markdown td {
+    padding: 10px 8px;
+  }
+
+  .mobile-manual-dialog__section--help tbody td {
+    padding: 0;
+  }
+}
+
+@media (max-height: 480px) {
+  .mobile-manual-dialog__header {
+    padding: 12px 20px;
+  }
+
+  .mobile-manual-dialog__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .mobile-manual-dialog__description {
+    display: none;
+  }
+
+  .mobile-manual-dialog__shortcuts {
+    margin-top: 10px;
+  }
+
+  .mobile-manual-dialog__footer {
+    padding: 10px 20px;
+  }
+
+  .mobile-manual-dialog__return {
+    min-height: 44px;
+  }
+}

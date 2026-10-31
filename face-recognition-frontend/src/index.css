@@ -47,6 +47,15 @@
     background: #edf7fb;
   }
 
+  /* The dedicated mobile pages keep their existing typography. */
+  html[data-mobile-attendance] {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-synthesis: initial;
+    text-rendering: auto;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+  }
+
   #root {
     isolation: isolate;
   }
